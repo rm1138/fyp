@@ -15,6 +15,11 @@ onmessage = function(e){
             
         }
     }
-    self.postMessage(data.buffer, [data.buffer]);
+    
+    var package = {
+        index: index,   
+        data: data.buffer
+    };
+    self.postMessage(package, [package.data]);
 };
 

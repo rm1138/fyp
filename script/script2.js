@@ -71,27 +71,32 @@ ac.add(anImg.getId(), anImg);
 
 var source = document.getElementById("img");
 source.src = "img/bg.jpg"
-var numThread = 4;
+var numThread = 1;//navigator.hardwareConcurrency || 4;
+
 var wkArray = [];
 
 source.onload = function () {
 
     var canvas = document.getElementById("myCanvas");
+	canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     var slicedWidth = canvas.width / numThread;
-    var slicedHeight = canvas.height;
+    var slicedHeight = canvas.height; 
     var tempContext = canvas.getContext("2d");
     var canvasData = [];
     var looper = [];
+	var cycle = 0;
+	var render = function (e) {
+		var arr = new Uint8ClampedArray(e.data.data);
+		var index = e.data.index;
+		canvasData = tempContext.createImageData(slicedWidth, slicedHeight);
+		canvasData.data.set(arr);
+		tempContext.putImageData(canvasData, index*slicedWidth, 0);
+	};
     for(var i=0; i<numThread; i++){
         var worker = new Worker("script/worker.js");
-        wkArray.push(worker);
-        worker.onmessage = function (e) {
-            var arr = new Uint8ClampedArray(e.data);
-            canvasData = tempContext.createImageData(slicedWidth, slicedHeight);
-            canvasData.data.set(arr);
-            tempContext.putImageData(canvasData, 0, k*slicedWidth);
-            console.log(k);
-        }
+        worker.onmessage = render; 
+		wkArray.push(worker);
     }
     
     for(var i=0; i<numThread; i++){
@@ -107,7 +112,7 @@ source.onload = function () {
             //if(package.data.byteLength > 0){
                 wkArray[j].postMessage(package, [package.data]);
             //}
-        }, 1000, i);         
+        }, 1000/30, i);         
     }
 
 }
