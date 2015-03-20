@@ -71,22 +71,43 @@ ac.add(anImg.getId(), anImg);
 
 var source = document.getElementById("img");
 source.src = "img/bg.jpg"
+var numThread = 4;
+var wkArray = [];
+
 source.onload = function () {
+
     var canvas = document.getElementById("myCanvas");
+    var slicedWidth = canvas.width / numThread;
+    var slicedHeight = canvas.height;
     var tempContext = canvas.getContext("2d");
-    var canvasData = tempContext.createImageData(canvas.width, canvas.height);
-       // console.log(canvasData.data);
-    var buf;
-    setInterval(function(){
-        buf = canvasData.data.buffer;
-        if(buf.byteLength > 0)
-            wk.postMessage(buf, [buf]);
-    }, 1000/30);
-    wk.onmessage = function (e) {
-        var arr = new Uint8ClampedArray(e.data);
-        canvasData = tempContext.createImageData(canvas.width, canvas.height);
-        canvasData.data.set(arr);
-        tempContext.putImageData(canvasData, 0, 0);
+    var canvasData = [];
+    var looper = [];
+    for(var i=0; i<numThread; i++){
+        var worker = new Worker("script/worker.js");
+        wkArray.push(worker);
+        worker.onmessage = function (e) {
+            var arr = new Uint8ClampedArray(e.data);
+            canvasData = tempContext.createImageData(slicedWidth, slicedHeight);
+            canvasData.data.set(arr);
+            tempContext.putImageData(canvasData, 0, k*slicedWidth);
+            console.log(k);
+        }
     }
-    //tempContext.clearRect(0, 0, canvas.width, canvas.height);
+    
+    for(var i=0; i<numThread; i++){
+        setInterval(function(j){
+            canvasData[j] = tempContext.getImageData(0, i*slicedWidth, slicedWidth, slicedHeight);
+
+            var package = {
+                index: j,   
+                width: slicedWidth,
+                height: slicedHeight,
+                data: canvasData[j].data.buffer
+            };
+            //if(package.data.byteLength > 0){
+                wkArray[j].postMessage(package, [package.data]);
+            //}
+        }, 1000, i);         
+    }
+
 }
