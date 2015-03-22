@@ -1,6 +1,3 @@
-//head-start------------
-var wk = new Worker("script/worker.js");
-//head-end--------------
 "use strict";
 var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     "use strict"
@@ -71,8 +68,7 @@ ac.add(anImg.getId(), anImg);
 
 var source = document.getElementById("img");
 source.src = "img/bg.jpg"
-var numThread = 1;//navigator.hardwareConcurrency || 4;
-
+var numThread = navigator.hardwareConcurrency || 4;
 var wkArray = [];
 
 source.onload = function () {
@@ -80,39 +76,66 @@ source.onload = function () {
     var canvas = document.getElementById("myCanvas");
 	canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    var ctx = canvas.getContext("2d");
+    
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    var tempCtx = tempCanvas.getContext("2d");
+    
     var slicedWidth = canvas.width / numThread;
     var slicedHeight = canvas.height; 
-    var tempContext = canvas.getContext("2d");
-    var canvasData = [];
-    var looper = [];
-	var cycle = 0;
+    var threadRendered = [];
 	var render = function (e) {
 		var arr = new Uint8ClampedArray(e.data.data);
 		var index = e.data.index;
-		canvasData = tempContext.createImageData(slicedWidth, slicedHeight);
-		canvasData.data.set(arr);
-		tempContext.putImageData(canvasData, index*slicedWidth, 0);
+        var temp = tempCtx.createImageData(slicedWidth, slicedHeight);
+		temp.data.set(arr);
+		tempCtx.putImageData(temp, index*slicedWidth, 0);
+        threadRendered[index] = true;
+        if(threadRendered.indexOf(true) != -1 ){
+            var temp = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            ctx.putImageData(temp, 0, 0);
+        }
 	};
+    
+    
     for(var i=0; i<numThread; i++){
         var worker = new Worker("script/worker.js");
         worker.onmessage = render; 
 		wkArray.push(worker);
+        threadRendered[i] = true;
     }
     
     for(var i=0; i<numThread; i++){
         setInterval(function(j){
-            canvasData[j] = tempContext.getImageData(0, i*slicedWidth, slicedWidth, slicedHeight);
-
-            var package = {
-                index: j,   
-                width: slicedWidth,
-                height: slicedHeight,
-                data: canvasData[j].data.buffer
-            };
-            //if(package.data.byteLength > 0){
-                wkArray[j].postMessage(package, [package.data]);
-            //}
-        }, 1000/30, i);         
+            if(threadRendered[j]){
+                var temp = ctx.getImageData(i*slicedWidth, 0, slicedWidth, slicedHeight);
+                var pack = {
+                    index: j,   
+                    width: slicedWidth,
+                    height: slicedHeight,
+                    data: temp.data.buffer
+                };
+                wkArray[j].postMessage(pack, [pack.data]);
+            }
+            threadRendered[j] = false;
+        }, 1000/60, i);         
     }
 
+}
+
+var updatePixelColor = function (canvas, x, y, r, g, b, a) {
+    var ctx = canvas.getContext("2d");
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.width);
+    
+    var arr = new Uint32Array(imageData.data.buffer);
+    arr[y * canvas.width + x] = 
+        (a << 24) |
+        (b << 16) |
+        (g << 8) |
+        (r);
+    var tempArr = new Uint8ClampedArray(arr.buffer);
+    imageData.data.set(tempArr);
+    ctx.putImageData(imageData, 0, 0);
 }
