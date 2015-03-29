@@ -1,3 +1,9 @@
+var imageWidth = 0;
+var imageHight = 0;
+var imageData;
+var objectList = [];
+var objectPath = [];
+
 onmessage = function(e){
     var data = new Uint32Array(e.data.data);
     var index = e.data.index;

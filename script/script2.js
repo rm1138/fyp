@@ -68,7 +68,7 @@ ac.add(anImg.getId(), anImg);
 
 var source = document.getElementById("img");
 source.src = "img/bg.jpg"
-var numThread = navigator.hardwareConcurrency || 4;
+var numThread = 1;//navigator.hardwareConcurrency || 4;
 var wkArray = [];
 
 source.onload = function () {
@@ -117,10 +117,10 @@ source.onload = function () {
                     height: slicedHeight,
                     data: temp.data.buffer
                 };
-                wkArray[j].postMessage(pack, [pack.data]);
+                wkArray[j].postMessage(temp, [temp]);
             }
             threadRendered[j] = false;
-        }, 1000/60, i);         
+        }, 1000, i);         
     }
 
 }
