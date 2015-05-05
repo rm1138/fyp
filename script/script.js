@@ -1,35 +1,29 @@
-window.onkeydown = function(e) {
-    
-    if(animatedFW.isRunning()){
-        animatedFW.pause();
-    }else{
-        animatedFW.run();
-    }
-};
-
 var animatedFW = new AnimatedCanvas("myCanvas");
-var timeline = animatedFW.newTimeline();
-var layer = animatedFW.newLayer();
+animatedFW.run();
+var layer = animatedFW.newLayer("layer1");
 
-layer.name = "layer1";
-layer.objects.push({
-        name: "object1",
+
+
+
+var count = 0;
+var doTouchStart = function (e){
+    e.preventDefault();
+    canvas_x = e.targetTouches[0].pageX;
+    canvas_y = e.targetTouches[0].pageY; 
+    var animateObject = layer.addObject({
+        name: "object" + count,
         url: "img/sensei.png",
         x: 0,
         y: 0
     });
 
-timeline.name = "timeline1";
-timeline.events.push({
-        name: "event1",
-        object: "object1",
-        animation: {
-            x: 50,
-            y: 50,
-            duration: 5
-        },
+    animateObject.animate({
+        x: canvas_x,
+        y: canvas_y,
+        duration: 1000
     });
+    count++;
+}
 
-console.log(animatedFW);
-animatedFW.run();
-
+var canvas = document.getElementById("myCanvas");
+canvas.addEventListener("touchstart", doTouchStart, false);

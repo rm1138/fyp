@@ -1,31 +1,28 @@
-var imageWidth = 0;
-var imageHight = 0;
-var imageData;
-var objectList = [];
-var objectPath = [];
-
 onmessage = function(e){
-    var data = new Uint32Array(e.data.data);
-    var index = e.data.index;
-    var width = e.data.width;
-    var height = e.data.height;
-    for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-            
+    e = JSON.parse(e.data);
+    var delta = e.delta;
+    var objects = e.objects;
+    var layer = e.layer;
+    
+    var objectCount = objects.length;
+    for(var i=0; i<objectCount; i+=1){
+        var object = objects[i];
+        if(object.remain > 0){
+            if(object.remain - delta > 0){
+                object.remain -= delta;
+            }else{
+                object.remain = 0;
+            }
+            object.x = abs(object.toX - object.originX) / object.duration;
+            object.x = object.x * (object.duration-object.remain);
+            object.y = abs(object.toY - object.originY) / object.duration;
+            object.y = object.y * (object.duration-object.remain);
 
-            data[y * width + x] =
-                (255   << 24) |    // alpha
-                (Math.random() * 0xff << 16) |    // blue
-                (Math.random() * 0xff <<  8) |    // green
-                 Math.random() * 0xff;            // red
-            
         }
     }
-    
-    var package = {
-        index: index,   
-        data: data.buffer
-    };
-    self.postMessage(package, [package.data]);
+    self.postMessage(JSON.stringify(e));
 };
 
+var abs = function(num){
+    return Math.abs(num);
+}

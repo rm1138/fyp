@@ -1,29 +1,29 @@
 "use strict";
 
-//(function() {
-//    var lastTime = 0;
-//    var vendors = ['ms', 'moz', 'webkit', 'o'];
-//    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-//        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-//        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
-//                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
-//    }
-// 
-//    if (!window.requestAnimationFrame)
-//        window.requestAnimationFrame = function(callback, element) {
-//            var currTime = new Date().getTime();
-//            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-//            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
-//              timeToCall);
-//            lastTime = currTime + timeToCall;
-//            return id;
-//        };
-// 
-//    if (!window.cancelAnimationFrame)
-//        window.cancelAnimationFrame = function(id) {
-//            clearTimeout(id);
-//        };
-//}());
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
 
 //constructor
 var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
@@ -36,26 +36,47 @@ var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     this.domElement = domElement;
     this.domElement.width = window.innerWidth;
     this.domElement.height = window.innerHeight;
-    this.context2D = domElement.getContext("2d");
+    this.context = domElement.getContext("2d");
+
+    
+    //Create a buffer canves for pre-render
+    this.__bufferCanvas = document.createElement('canvas');
+    this.__bufferCanvas.width = this.domElement.width;
+    this.__bufferCanvas.height = this.domElement.height;
+    this.__bufferContext = this.__bufferCanvas.getContext("2d");
+    
     this.layers = [];
-    this.timelines = [];
+    this.imges = {};
+    
     this.running = false;
     this.lastPaintTime = new Date().getTime();
+    
+    
     this.__frameCount = 0;
     this.__requestId = 0;
-    this.__numOfThread = 4;
+    this.__numOfThread = navigator.hardwareConcurrency || 4;
+    this.__workers = [];
+
+    var _this = this;
+    for(var i=0; i< this.__numOfThread; i+=1){
+        var worker = new Worker("script/worker.js");
+        worker.onmessage = function(e){
+            e = JSON.parse(e.data);
+            _this.layers[e.layer].objects = e.objects;
+            _this.layers[e.layer].drawing = false;
+        }
+        this.__workers.push(worker);
+    }
 }
 
 //methods and body
 /*
 Layer - contains objects (top layer overlaps bottom layers)
-Timeline - contains events (The running order)
-    1 thread handle 1 time line
-
 Object - URL, type, style, coordinate, state, ...
-Event - Involved object ID, Animation, type, duration, empty event
+
 */
 AnimatedCanvas.prototype = {
+    debug: true,
     run: function () {
         if(!this.requestId){
             this.running = true;
@@ -79,32 +100,108 @@ AnimatedCanvas.prototype = {
             this.__requestId = window.requestAnimationFrame(function(){
                 that.__draw();
             });
+            //render the buffer to the canvas
+            this.context.clearRect(0, 0, this.domElement.width, this.domElement.height);
+            this.context.drawImage(this.__bufferCanvas, 0, 0);
+            
+            
             // Drawing code goes here... for example updating an 'x' position:
             //render from bottom layer to top layer
             var delta = new Date().getTime() - this.lastPaintTime;
             this.lastPaintTime = new Date().getTime();
-            this.context2D.clearRect(0, 0, this.domElement.width, this.domElement.height);
-            this.context2D.font = "30px Arial";
-            this.context2D.fillText(delta,  Math.random()*this.domElement.width, Math.random()*this.domElement.height);
+            this.__bufferContext.clearRect(0, 0, this.domElement.width, this.domElement.height);
+            this.__calculateMovment(delta);
+            this.__prerender();
+            //debug
+            if(this.debug)
+                this.renderFrameCount();
         }
+    },
+    __prerender: function(){
+        var layerCount = this.layers.length;
+        for(var i = 0; i<layerCount; i += 1){
+            var layer = this.layers[i];
+            var objectCount = this.layers[i].objects.length;
+             
+            for(var j = 0; j<objectCount; j+=1){
+                var object = layer.objects[j];
+                this.__bufferContext.drawImage(this.imges[object.name], object.x - this.imges[object.name].width/2, object.y - this.imges[object.name].height/2);
+            }
+        }
+    },
+    __calculateMovment: function(delta){
+        var layerCount = this.layers.length;
+        for(var i = 0; i<layerCount; i += 1){
+            if(!this.layers[i].drawing){
+                var data = {
+                    layer: i,
+                    delta: delta,
+                    objects: this.layers[i].objects
+                }
+                this.__workers[0].postMessage(JSON.stringify(data));
+                this.layers[i].drawing = true;
+            }
+        }
+    },
+    renderFrameCount: function(){
+        this.__bufferContext.clearRect(5, 5, 80, 30);
+        this.__bufferContext.beginPath();
+        this.__bufferContext.fillStyle = "#FF0000";
+        this.__bufferContext.font = "30px Arial";
+        this.__bufferContext.fillText(this.__frameCount++,  10, 30);
+        this.__bufferContext.closePath();
     },
     isRunning: function(){
         return this.running;   
     },
-    newTimeline: function() {
-        var newTimeline = {
-            name: "",
-            events: []
-        };
-        this.timelines.push(newTimeline);
-        return newTimeline;
-    },
-    newLayer: function() {
-        var newLayer = {
-            name: "",
-            objects: []
-        };
+    newLayer: function(name) {
+        var newLayer = new Layer(name, this)
         this.layers.push(newLayer);
         return newLayer;
     }
 };
+
+var Layer = Layer || function (name, canvas){
+    this.name = name;
+    this.objects = [];
+    this.canvas = canvas;
+    this.drawing = false;
+}
+
+Layer.prototype = {
+    addObject: function(obj){
+        if(obj.url){
+            //pre load image
+            var img = new Image();
+            img.src = obj.url;
+            this.canvas.imges[obj.name] = img;
+            obj.type = Enums.ObjectType.Image;
+        }
+        var animateObj = new AnimateObject(obj);
+        this.objects.push(animateObj);
+        return animateObj;
+    }
+};
+
+var AnimateObject = AnimateObject || function(obj){
+    for(var prop in obj){
+        this[prop] = obj[prop];    
+    }
+}
+
+AnimateObject.prototype = {
+    animate: function(obj){
+        this.toX = obj.x;
+        this.toY = obj.y;
+        this.originX = this.x;
+        this.originY = this.y;
+        this.duration = obj.duration;
+        this.remain = obj.duration;
+    }
+}
+
+var Enums = {
+    ObjectType:{
+        Image:0
+    }
+}
