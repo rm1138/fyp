@@ -31,7 +31,7 @@ var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     if(domElement === null){
         return null;   
     }
-    
+    var _this = this;
     this.canvasID = canvasDomID;
     this.domElement = domElement;
     this.domElement.width = window.innerWidth;
@@ -51,21 +51,24 @@ var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     this.running = false;
     this.lastPaintTime = new Date().getTime();
     
-    
     this.__frameCount = 0;
     this.__requestId = 0;
-    this.__numOfThread = navigator.hardwareConcurrency || 4;
-    this.__workers = [];
-
-    var _this = this;
-    for(var i=0; i< this.__numOfThread; i+=1){
-        var worker = new Worker("script/worker.js");
-        worker.onmessage = function(e){
-            e = JSON.parse(e.data);
-            _this.layers[e.layer].objects = e.objects;
-            _this.layers[e.layer].drawing = false;
+    
+    if(window.Worker){
+        this.__numOfThread = 1;//navigator.hardwareConcurrency || 4;
+        this.__workers = [];
+        for(var i=0; i< this.__numOfThread; i+=1){
+            var worker = new Worker("script/worker.js");
+            worker.onmessage = function(e){
+                e = JSON.parse(e.data);
+                _this.layers[e.layer].objects = e.objects;
+                _this.layers[e.layer].drawing = false;
+            }
+            this.__workers.push(worker);
         }
-        this.__workers.push(worker);
+        this.__supportWorker = true;
+    }else{
+        this.__supportWorker = false;
     }
 }
 
@@ -76,7 +79,7 @@ Object - URL, type, style, coordinate, state, ...
 
 */
 AnimatedCanvas.prototype = {
-    debug: true,
+    debug: false,
     run: function () {
         if(!this.requestId){
             this.running = true;
@@ -109,15 +112,18 @@ AnimatedCanvas.prototype = {
             //render from bottom layer to top layer
             var delta = new Date().getTime() - this.lastPaintTime;
             this.lastPaintTime = new Date().getTime();
-            this.__bufferContext.clearRect(0, 0, this.domElement.width, this.domElement.height);
+            
             this.__calculateMovment(delta);
-            this.__prerender();
+            
+            this.__renderOnBuffer();
             //debug
             if(this.debug)
                 this.renderFrameCount();
         }
     },
-    __prerender: function(){
+    __renderOnBuffer: function(){
+        this.__bufferContext.clearRect(0, 0, this.domElement.width, this.domElement.height);
+        
         var layerCount = this.layers.length;
         for(var i = 0; i<layerCount; i += 1){
             var layer = this.layers[i];
@@ -125,7 +131,8 @@ AnimatedCanvas.prototype = {
              
             for(var j = 0; j<objectCount; j+=1){
                 var object = layer.objects[j];
-                this.__bufferContext.drawImage(this.imges[object.name], object.x - this.imges[object.name].width/2, object.y - this.imges[object.name].height/2);
+                var img = this.imges[object.name];
+                this.__bufferContext.drawImage(img, object.x - img.width/2, object.y - img.height/2);
             }
         }
     },
@@ -138,7 +145,7 @@ AnimatedCanvas.prototype = {
                     delta: delta,
                     objects: this.layers[i].objects
                 }
-                this.__workers[0].postMessage(JSON.stringify(data));
+                this.__workers[i % this.__numOfThread].postMessage(JSON.stringify(data));
                 this.layers[i].drawing = true;
             }
         }
@@ -187,6 +194,7 @@ var AnimateObject = AnimateObject || function(obj){
     for(var prop in obj){
         this[prop] = obj[prop];    
     }
+    console.log(this);
 }
 
 AnimateObject.prototype = {
@@ -197,6 +205,7 @@ AnimateObject.prototype = {
         this.originY = this.y;
         this.duration = obj.duration;
         this.remain = obj.duration;
+        console.log(this);
     }
 }
 
