@@ -25,6 +25,30 @@
         };
 }());
 
+var AnimateObject = AnimateObject || function(obj){
+    for(var prop in obj){
+        this[prop] = obj[prop];    
+    }
+    this.drawing = false;
+}
+
+AnimateObject.prototype = {
+    animate: function(obj){
+        this.toX = obj.x;
+        this.toY = obj.y;
+        this.originX = this.x;
+        this.originY = this.y;
+        this.duration = obj.duration;
+        this.remain = obj.duration;
+    }
+}
+
+var Enums = {
+    ObjectType:{
+        Image:0
+    }
+}
+
 //constructor
 var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     var domElement = document.getElementById(canvasDomID);
@@ -34,35 +58,45 @@ var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
     var _this = this;
     this.canvasID = canvasDomID;
     this.domElement = domElement;
-    this.domElement.width = window.innerWidth;
-    this.domElement.height = window.innerHeight;
+    this.canvasWidth = window.innerWidth;
+    this.canvasHight = window.innerHeight;
+    this.domElement.width = this.canvasWidth;
+    this.domElement.height = this.canvasHight;
     this.context = domElement.getContext("2d");
 
     
     //Create a buffer canves for pre-render
     this.__bufferCanvas = document.createElement('canvas');
-    this.__bufferCanvas.width = this.domElement.width;
-    this.__bufferCanvas.height = this.domElement.height;
+    this.__bufferCanvas.width = this.canvasWidth;
+    this.__bufferCanvas.height = this.canvasHight;
     this.__bufferContext = this.__bufferCanvas.getContext("2d");
     
-    this.layers = [];
-    this.imges = {};
     
+    //objects list and images list
+    this.objects = {};
+    this.images = {};
+    
+    
+    //running statue
     this.running = false;
     this.lastPaintTime = new Date().getTime();
     
+    
+    //
     this.__frameCount = 0;
     this.__requestId = 0;
     
     if(window.Worker){
-        this.__numOfThread = 1;//navigator.hardwareConcurrency || 4;
+        this.__numOfThread = 4;//navigator.hardwareConcurrency || 4;
         this.__workers = [];
         for(var i=0; i< this.__numOfThread; i+=1){
             var worker = new Worker("script/worker.js");
             worker.onmessage = function(e){
                 e = JSON.parse(e.data);
-                _this.layers[e.layer].objects = e.objects;
-                _this.layers[e.layer].drawing = false;
+                if(_this.objects[e.objID].drawing){
+                    _this.objects[e.objID] = e.object;
+                    _this.objects[e.objID].drawing = false;
+                }
             }
             this.__workers.push(worker);
         }
@@ -76,10 +110,9 @@ var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
 /*
 Layer - contains objects (top layer overlaps bottom layers)
 Object - URL, type, style, coordinate, state, ...
-
 */
 AnimatedCanvas.prototype = {
-    debug: false,
+    debug: true,
     run: function () {
         if(!this.requestId){
             this.running = true;
@@ -94,60 +127,60 @@ AnimatedCanvas.prototype = {
             this.__requestId = 0;
         }
     },
-    setState: function (state) {
-        this.state = state;   
-    },
     __draw: function(){
         var that = this;
         if(this.running){
+            
             this.__requestId = window.requestAnimationFrame(function(){
                 that.__draw();
             });
+            
             //render the buffer to the canvas
-            this.context.clearRect(0, 0, this.domElement.width, this.domElement.height);
+            this.context.clearRect(0, 0, this.canvasWidth, this.canvasHight);
             this.context.drawImage(this.__bufferCanvas, 0, 0);
             
             
-            // Drawing code goes here... for example updating an 'x' position:
-            //render from bottom layer to top layer
-            var delta = new Date().getTime() - this.lastPaintTime;
-            this.lastPaintTime = new Date().getTime();
+            var now = new Date().getTime();
+            var delta = now - this.lastPaintTime;
+            this.lastPaintTime = now;
             
             this.__calculateMovment(delta);
-            
             this.__renderOnBuffer();
+            
             //debug
             if(this.debug)
                 this.renderFrameCount();
         }
     },
     __renderOnBuffer: function(){
-        this.__bufferContext.clearRect(0, 0, this.domElement.width, this.domElement.height);
-        
-        var layerCount = this.layers.length;
-        for(var i = 0; i<layerCount; i += 1){
-            var layer = this.layers[i];
-            var objectCount = this.layers[i].objects.length;
-             
-            for(var j = 0; j<objectCount; j+=1){
-                var object = layer.objects[j];
-                var img = this.imges[object.name];
-                this.__bufferContext.drawImage(img, object.x - img.width/2, object.y - img.height/2);
+        //clear buffer canvas
+        this.__bufferContext.clearRect(0, 0, this.canvasWidth, this.canvasHight);
+
+        var objects = this.objects;
+        for(var name in objects){
+            if(objects.hasOwnProperty(name)){
+                var object = objects[name];
+                this.__bufferContext.drawImage(this.images[name], object.x, object.y);
             }
         }
     },
     __calculateMovment: function(delta){
-        var layerCount = this.layers.length;
-        for(var i = 0; i<layerCount; i += 1){
-            if(!this.layers[i].drawing){
-                var data = {
-                    layer: i,
-                    delta: delta,
-                    objects: this.layers[i].objects
+        var count = 0;
+        var objects = this.objects;
+        for(var name in objects){
+            if(objects.hasOwnProperty(name)){
+                var object = objects[name];
+                if(!object.drawing && object.remain>0){
+                    var data = {
+                        objID: name,
+                        delta: delta,
+                        object: object
+                    }
+                    this.__workers[count % this.__numOfThread].postMessage(JSON.stringify(data));
+                    this.objects[name].drawing = true;
                 }
-                this.__workers[i % this.__numOfThread].postMessage(JSON.stringify(data));
-                this.layers[i].drawing = true;
             }
+            count+=1;
         }
     },
     renderFrameCount: function(){
@@ -161,56 +194,20 @@ AnimatedCanvas.prototype = {
     isRunning: function(){
         return this.running;   
     },
-    newLayer: function(name) {
-        var newLayer = new Layer(name, this)
-        this.layers.push(newLayer);
-        return newLayer;
-    }
-};
-
-var Layer = Layer || function (name, canvas){
-    this.name = name;
-    this.objects = [];
-    this.canvas = canvas;
-    this.drawing = false;
-}
-
-Layer.prototype = {
+    commit: function(){
+        
+    },
     addObject: function(obj){
+        this.objects[obj.name] = obj;
         if(obj.url){
             //pre load image
             var img = new Image();
             img.src = obj.url;
-            this.canvas.imges[obj.name] = img;
-            obj.type = Enums.ObjectType.Image;
+            this.images[obj.name] = img;
         }
-        var animateObj = new AnimateObject(obj);
-        this.objects.push(animateObj);
-        return animateObj;
+    },
+    get: function(name){
+        return this.objects[name];    
     }
 };
 
-var AnimateObject = AnimateObject || function(obj){
-    for(var prop in obj){
-        this[prop] = obj[prop];    
-    }
-    console.log(this);
-}
-
-AnimateObject.prototype = {
-    animate: function(obj){
-        this.toX = obj.x;
-        this.toY = obj.y;
-        this.originX = this.x;
-        this.originY = this.y;
-        this.duration = obj.duration;
-        this.remain = obj.duration;
-        console.log(this);
-    }
-}
-
-var Enums = {
-    ObjectType:{
-        Image:0
-    }
-}
