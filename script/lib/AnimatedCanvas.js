@@ -1,7 +1,10 @@
 define([
         'lib/enums',
-        'lib/AnimatedObject'
-    ], function(enums, AnimatedObject){
+        'lib/AnimateModel',
+        'lib/model/ModelLayer',
+        'lib/imgUtil',
+        'lib/loopUtil'
+    ], function(enums, AnimateModel, ModelLayer, ImgUtil, loopUtil){
 
     "use strict";
 
@@ -31,20 +34,26 @@ define([
     }());
 
     //constructor
-    var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
+    var AnimatedCanvas = AnimatedCanvas || function (canvasDomID, devMode) {
         var domElement = document.getElementById(canvasDomID);
         if(domElement === null){
+            console.info("DOM Element not found");
             return null;   
         }
+        
         var _this = this;
         this.canvasID = canvasDomID;
         this.domElement = domElement;
-        this.canvasWidth = window.innerWidth;
-        this.canvasHight = window.innerHeight;
-        this.domElement.width = this.canvasWidth;
-        this.domElement.height = this.canvasHight;
-        this.context = domElement.getContext("2d");
+        
+        this.__debug  = devMode;
+        if(this.__debug){
+            this.canvasWidth = window.innerWidth;
+            this.canvasHight = window.innerHeight;
+            this.domElement.width = this.canvasWidth;
+            this.domElement.height = this.canvasHight;
+        }
 
+        this.context = domElement.getContext("2d");
 
         //Create a buffer canves for pre-render
         this.__bufferCanvas = document.createElement('canvas');
@@ -52,58 +61,46 @@ define([
         this.__bufferCanvas.height = this.canvasHight;
         this.__bufferContext = this.__bufferCanvas.getContext("2d");
 
-
-        //objects list and images list
-        this.objects = {};
-        this.images = {};
-
+        //models list
+        this.models = new ModelLayer();
 
         //running statue
         this.running = false;
         this.lastPaintTime = new Date().getTime();
 
-
-        //
+        //debug
         this.__frameCount = 0;
         this.__requestId = 0;
 
+        //worker support
+        this.__supportWorker = false;
         if(window.Worker){
-            this.__numOfThread = 4;//navigator.hardwareConcurrency || 4;
+            this.__numOfThread = 1;//navigator.hardwareConcurrency || 4;
             this.__workers = [];
-            for(var i=0; i< this.__numOfThread; i+=1){
-                var worker = new Worker("script/lib/worker.js");
-                worker.onmessage = function(e){
-                    e = JSON.parse(e.data);
-                    if(_this.objects[e.objID].drawing){
-                        _this.objects[e.objID].update(e.object);
-                        _this.objects[e.objID].drawing = false;
-                    }
-                }
-                this.__workers.push(worker);
-            }
+            this.initWorker();
             this.__supportWorker = true;
-        }else{
-            this.__supportWorker = false;
         }
     }
-
-    //methods and body
-    /*
+/*
     Layer - contains objects (top layer overlaps bottom layers)
     Object - URL, type, style, coordinate, state, ...
     */
     AnimatedCanvas.prototype = {
-        createObject: function(obj){
-            this.objects[obj.name] = new AnimatedObject(obj);
+        addModel: function(obj){
+            var _this = this;
+           
+            
             if(obj.url){
                 //pre load image
                 var img = new Image();
                 img.src = obj.url;
-                this.images[obj.name] = img;
+                obj.type = enums.ObjectType.Image;
+                
             }
-            return this.objects[obj.name];
+            var temp  = new AnimateModel(obj);
+            _this.models.add(temp);
+            return tempObject;
         },
-        debug: true,
         run: function () {
             if(!this.requestId){
                 this.running = true;
@@ -127,67 +124,97 @@ define([
                 });
 
                 //render the buffer to the canvas
+                //this.__bufferContext.imageSmoothingEnabled = false;
+                if(this.__bufferImagerData){
+                    //console.log(this.__bufferImagerData);
+                    this.__bufferContext.putImageData(this.__bufferImagerData, 0, 0);
+                    //this.pause();
+                }
+                if(this.__debug){
+                    var delta = new Date().getTime() - this.lastPaintTime;
+                    this.renderFrameCount(delta);
+                
+                }
                 this.context.clearRect(0, 0, this.canvasWidth, this.canvasHight);
                 this.context.drawImage(this.__bufferCanvas, 0, 0);
-
+                this.__frameCount += 1;
 
                 var now = new Date().getTime();
                 var delta = now - this.lastPaintTime;
                 this.lastPaintTime = now;
 
-                this.__calculateMovment(delta);
+                //this.__calculateMovment(delta);
                 this.__renderOnBuffer();
 
-                //debug
-                if(this.debug)
-                    this.renderFrameCount();
+
             }
         },
         __renderOnBuffer: function(){
+            this.lastPaintTime = new Date().getTime();
             //clear buffer canvas
             this.__bufferContext.clearRect(0, 0, this.canvasWidth, this.canvasHight);
-
             var objects = this.objects;
-            for(var name in objects){
-                if(objects.hasOwnProperty(name)){
-                    var object = objects[name];
-                    this.__bufferContext.drawImage(this.images[name], object.x, object.y);
-                }
-            }
+            
+            loopUtil.fastLoop(objects, function(object){
+                var name = item.name;
+                this.__bufferContext.drawImage(
+                    this.images[name],
+                    object.x - this.images[name].width,
+                    object.y - this.images[name].height
+                )
+            });
+
         },
         __calculateMovment: function(delta){
-            var count = 0;
-            var objects = this.objects;
-            for(var name in objects){
-                if(objects.hasOwnProperty(name)){
-                    var object = objects[name];
-                    if(!object.drawing && object.remain>0){
-                        var data = {
-                            command: "draw",
-                            objID: name,
-                            delta: delta,
-                            object: object
-                        }
-                        this.__workers[count % this.__numOfThread].postMessage(JSON.stringify(data));
-                        this.objects[name].drawing = true;
-                    }
-                }
-                count+=1;
-            }
+            
+//            for(var i=0; i<this.__numOfThread; i+=1){
+//                var payload = {
+//                    delta: delta,
+//                    objects: this.objects
+//                }
+//                this.__workers[i].postMessage({command: "draw", payload: payload});
+//            }
         },
-        renderFrameCount: function(){
-            this.__bufferContext.clearRect(5, 5, 80, 30);
+        renderFrameCount: function(delta){
+            if(Math.random() > 0.9){    
+                this.fps = Math.floor(1000/delta);
+            }
+            this.__bufferContext.clearRect(5, 5, 120, 30);
             this.__bufferContext.beginPath();
             this.__bufferContext.fillStyle = "#FF0000";
             this.__bufferContext.font = "30px Arial";
-            this.__bufferContext.fillText(this.__frameCount++,  10, 30);
+            this.__bufferContext.fillText("FPS: " + this.fps,  10, 30);
             this.__bufferContext.closePath();
         },
-        isRunning: function(){
-            return this.running;   
-        },
-        commit: function(){
+        onWorkerReturn: function(e){
+            var command = e.data.command;
+            var _this = this;
+            if(command === enums.command.updateObject){
 
+                var objects = e.data.objects;
+                for(var name in _this.objects){
+                    _this.objects[name].update(objects[name]);
+                }
+            } else if(command === enums.command.ready) {
+                var payload = {};
+                e.currentTarget.postMessage({
+                    command: enums.command.init,
+                    payload: payload
+                }); 
+            }
+        },
+        initWorker: function(){
+            var _this = this;
+            for(var i=0; i< this.__numOfThread; i+=1){
+                var worker = new Worker("script/lib/worker.js");
+                worker.onmessage = function(e){
+                    _this.onWorkerReturn(e);
+                }
+                this.__workers.push(worker);
+            }
+        },
+        model: function(name) {
+            return this.models.getByName(name);                
         }
     };
     

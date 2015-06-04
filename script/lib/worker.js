@@ -1,24 +1,44 @@
-console.log("Worker spwand");
-onmessage = function(e){
-    var command = e.data.command;
-    e = JSON.parse(e.data);
-    var delta = e.delta;
-    var object = e.object;
+importScripts("../external/require.js");
 
-    if(object.remain > 0){
-        if(object.remain - delta > 0){
-            object.remain -= delta;
-        }else{
-            object.remain = 0;
+
+require(["enums", "loopUtil"], function(enums, loopUtil){
+    var updateObjects = function(arr, delta) {
+        loopUtil.fastLoop(arr, 
+            function(item){ 
+                if(item.remain > 0){
+                    if(item.remain - delta > 0){
+                        item.remain -= delta;
+                    }else{
+                        item.remain = 0;
+                    }
+                    var tempX = (item.toX - item.originX) / item.duration;
+                    tempX *= (item.duration-item.remain);
+
+                    var tempY = (item.toY - item.originY) / item.duration;
+                    tempY *= (item.duration-item.remain);
+
+                    item.x = item.originX + tempX;
+                    item.y = item.originY + tempY;
+                }
+            }
+        );
+        return arr;
+    };
+
+    onmessage = function(e){
+        var command = e.data.command;
+        var payload = e.data.payload;
+        if(command === enums.command.updateObject){
+            updateObjects(payload.objects, payload.delta);
+            self.postMessage({
+                command: enums.command.updateObject,
+                payload: payload
+            }); 
+        }else if(command === enums.command.init){
+            console.info("Worker is inited");
         }
-        var tempX = (object.toX - object.originX) / object.duration;
-        tempX = tempX * (object.duration-object.remain);
-        
-        var tempY = (object.toY - object.originY) / object.duration;
-        tempY = tempY * (object.duration-object.remain);
-        
-        object.x = object.originX + tempX;
-        object.y = object.originY + tempY;
-    }
-    self.postMessage(JSON.stringify(e));
-};
+    };
+    self.postMessage({
+        command: enums.command.ready
+    });
+});
