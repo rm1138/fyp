@@ -1,7 +1,16 @@
+var framework = 'lib/'
+
 requirejs.config({
     baseUrl: 'script',
     paths: {
-        lib: '../script/lib'
+        framework: framework,
+        class: framework + 'class',
+        "underscore": "external/underscore",
+    },
+    shim: {
+        underscore: {
+            exports: '_'
+        }
     }
 });
 

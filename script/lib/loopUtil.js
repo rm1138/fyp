@@ -27,8 +27,9 @@ define(function(){
                     iterations--;  
                 } 
             }else{
-
+                console.trace();
                 var iterations = arr.length % 8;
+                
                 i = arr.length - 1;
 
                 while(iterations){

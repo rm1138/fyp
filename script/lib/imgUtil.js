@@ -23,5 +23,31 @@ define(function(){
         return imageData.data;
     }
     
+    ImgUtil.calculateCoordinate = function(obj){
+       if(obj.remain > 0){
+            if(obj.remain - delta > 0){
+                obj.remain -= delta;
+            }else{
+                obj.remain = 0;
+            }
+            var tempX = (obj.toX - obj.originX) / obj.duration;
+            tempX *= (obj.duration-obj.remain);
+
+            var tempY = (obj.toY - obj.originY) / obj.duration;
+            tempY *= (obj.duration-obj.remain);
+
+            obj.x = obj.originX + tempX;
+            obj.y = obj.originY + tempY;
+       }
+    }
+    var ImgUtil = {};
+    ImgUtil.checkCollision = function(screenW, screenH, objectBitMaps) {
+        var cache = [screenH];
+        while(--screenH){
+            cache[screenH] = new Uint8Array(screenW);
+        }
+        
+        console.log(cache);
+    }
     return ImgUtil;
 });

@@ -1,27 +1,9 @@
 importScripts("../external/require.js");
+var functionContainer = {};
 
-
-require(["enums", "loopUtil"], function(enums, loopUtil){
+require(["enums", "loopUtil", "imgUtil"], function(enums, loopUtil, imgUtil){
     var updateObjects = function(arr, delta) {
-        loopUtil.fastLoop(arr, 
-            function(item){ 
-                if(item.remain > 0){
-                    if(item.remain - delta > 0){
-                        item.remain -= delta;
-                    }else{
-                        item.remain = 0;
-                    }
-                    var tempX = (item.toX - item.originX) / item.duration;
-                    tempX *= (item.duration-item.remain);
-
-                    var tempY = (item.toY - item.originY) / item.duration;
-                    tempY *= (item.duration-item.remain);
-
-                    item.x = item.originX + tempX;
-                    item.y = item.originY + tempY;
-                }
-            }
-        );
+        loopUtil.fastLoop(arr, imgUtil.calculateCoordinate);
         return arr;
     };
 
@@ -29,16 +11,23 @@ require(["enums", "loopUtil"], function(enums, loopUtil){
         var command = e.data.command;
         var payload = e.data.payload;
         if(command === enums.command.updateObject){
-            updateObjects(payload.objects, payload.delta);
-            self.postMessage({
-                command: enums.command.updateObject,
-                payload: payload
-            }); 
+            var ans = functionContainer["myFunct"]("pobb");
+            console.log(ans);
         }else if(command === enums.command.init){
             console.info("Worker is inited");
+        }else if(command === enums.command.injectFunction){
+            var url = URL.createObjectURL(payload);
+            importScripts(url);
         }
     };
     self.postMessage({
         command: enums.command.ready
     });
 });
+
+/*
+
+var ans = functionContainer["myFunct"]("abc");
+console.log(ans);
+
+*/

@@ -1,6 +1,8 @@
 define(function(){
     var Animation = Animation || function(obj) {
-            
+        for(prop in obj){
+            this[prop] = obj[prop];    
+        }
         
     }
     

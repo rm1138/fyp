@@ -1,13 +1,14 @@
 define([
+        'underscore',
         'lib/enums',
-        'lib/AnimateModel',
-        'lib/model/ModelLayer',
+        'class/Model',
+        'class/Layer',
         'lib/imgUtil',
-        'lib/loopUtil'
-    ], function(enums, AnimateModel, ModelLayer, ImgUtil, loopUtil){
-
+        'lib/loopUtil',
+        'lib/Renderer',
+        'lib/Global',
+    ], function(_, enums, AnimatedModel, Layer, ImgUtil, loopUtil, Renderer, Global){
     "use strict";
-
     (function() {
         var lastTime = 0;
         var vendors = ['ms', 'moz', 'webkit', 'o'];
@@ -34,163 +35,111 @@ define([
     }());
 
     //constructor
-    var AnimatedCanvas = AnimatedCanvas || function (canvasDomID, devMode) {
-        var domElement = document.getElementById(canvasDomID);
-        if(domElement === null){
+    var AnimatedCanvas = AnimatedCanvas || function (canvasDomID) {
+        this.renderer = new Renderer(canvasDomID);
+        if(this.renderer === null){
             console.info("DOM Element not found");
-            return null;   
+            return null;    
         }
         
-        var _this = this;
-        this.canvasID = canvasDomID;
-        this.domElement = domElement;
-        
-        this.__debug  = devMode;
-        if(this.__debug){
-            this.canvasWidth = window.innerWidth;
-            this.canvasHight = window.innerHeight;
-            this.domElement.width = this.canvasWidth;
-            this.domElement.height = this.canvasHight;
-        }
-
-        this.context = domElement.getContext("2d");
-
-        //Create a buffer canves for pre-render
-        this.__bufferCanvas = document.createElement('canvas');
-        this.__bufferCanvas.width = this.canvasWidth;
-        this.__bufferCanvas.height = this.canvasHight;
-        this.__bufferContext = this.__bufferCanvas.getContext("2d");
-
-        //models list
-        this.models = new ModelLayer();
-
-        //running statue
+        this.debug  = Global.debug;
         this.running = false;
-        this.lastPaintTime = new Date().getTime();
-
-        //debug
-        this.__frameCount = 0;
-        this.__requestId = 0;
-
+        this.requestId = 0;
+        
+        this.layers = [];
+        
         //worker support
-        this.__supportWorker = false;
+        this.supportWorker = false;
         if(window.Worker){
-            this.__numOfThread = 1;//navigator.hardwareConcurrency || 4;
-            this.__workers = [];
+            this.numOfThread = navigator.hardwareConcurrency || 4;
+            this.workers = [];
             this.initWorker();
-            this.__supportWorker = true;
+            this.supportWorker = true;
         }
-    }
-/*
-    Layer - contains objects (top layer overlaps bottom layers)
-    Object - URL, type, style, coordinate, state, ...
-    */
+    };
+
     AnimatedCanvas.prototype = {
-        addModel: function(obj){
-            var _this = this;
-           
-            
-            if(obj.url){
-                //pre load image
-                var img = new Image();
-                img.src = obj.url;
-                obj.type = enums.ObjectType.Image;
-                
-            }
-            var temp  = new AnimateModel(obj);
-            _this.models.add(temp);
-            return tempObject;
+        createLayer: function(name, index) {
+            var tempLayer = {
+                name: name,
+                layer: new Layer(name)
+            };
+            this.layers.push(tempLayer);
+            this.renderer.addLayerCanvas(name);
+            return tempLayer.layer;
         },
-        run: function () {
+        deleteLayer: function(name){
+            console.log(_);
+            var removeId = _.findIndex(this.layers, function(item){
+                return item.name === name;    
+            });
+            console.log(this.layers[removeId]);
+            this.layers.remove(removeId);
+        },
+        start: function () {
             if(!this.requestId){
                 this.running = true;
                 this.lastPaintTime = new Date().getTime();
-                this.__draw();
+                if(this.supportWorker){
+                    this.draw();
+                }else{
+                    this.drawFallBack();
+                }
             }
         },
         pause: function () {
-            if(this.__requestId){
+            if(this.requestId){
                 this.running = false;
-                window.cancelAnimationFrame(this.__requestId);
-                this.__requestId = 0;
+                window.cancelAnimationFrame(this.requestId);
+                this.requestId = 0;
             }
         },
-        __draw: function(){
+        draw: function(){
             var that = this;
             if(this.running){
-
-                this.__requestId = window.requestAnimationFrame(function(){
-                    that.__draw();
+                this.requestId = window.requestAnimationFrame(function(){
+                    that.draw();
                 });
-
-                //render the buffer to the canvas
-                //this.__bufferContext.imageSmoothingEnabled = false;
-                if(this.__bufferImagerData){
-                    //console.log(this.__bufferImagerData);
-                    this.__bufferContext.putImageData(this.__bufferImagerData, 0, 0);
-                    //this.pause();
-                }
-                if(this.__debug){
-                    var delta = new Date().getTime() - this.lastPaintTime;
-                    this.renderFrameCount(delta);
+                var renderer = this.renderer;
+                renderer.render();
                 
-                }
-                this.context.clearRect(0, 0, this.canvasWidth, this.canvasHight);
-                this.context.drawImage(this.__bufferCanvas, 0, 0);
-                this.__frameCount += 1;
+                
+                var layers = this.layers;
+                var count = layers.length-1;
 
-                var now = new Date().getTime();
-                var delta = now - this.lastPaintTime;
-                this.lastPaintTime = now;
-
-                //this.__calculateMovment(delta);
-                this.__renderOnBuffer();
-
-
+                while(Global.modelCount === Global.readyModelCount && count !== -1){
+                    renderer.renderOnBuffer(layers[count].layer);        
+                    count -= 1;
+                };
+//                
+//                var animationFunction = function (str) {
+//                    return str + "abcc";
+//                };
+//
+//                var b = new Blob([
+//                    "functionContainer.myFunct = " + animationFunction.toString()
+//                ], { type: 'application/javascript' });
+//                this.workers[0].postMessage({
+//                        command: enums.command.test,
+//                        payload: b
+//                });
             }
         },
-        __renderOnBuffer: function(){
-            this.lastPaintTime = new Date().getTime();
-            //clear buffer canvas
-            this.__bufferContext.clearRect(0, 0, this.canvasWidth, this.canvasHight);
-            var objects = this.objects;
-            
-            loopUtil.fastLoop(objects, function(object){
-                var name = item.name;
-                this.__bufferContext.drawImage(
-                    this.images[name],
-                    object.x - this.images[name].width,
-                    object.y - this.images[name].height
-                )
-            });
-
-        },
-        __calculateMovment: function(delta){
-            
-//            for(var i=0; i<this.__numOfThread; i+=1){
-//                var payload = {
-//                    delta: delta,
-//                    objects: this.objects
-//                }
-//                this.__workers[i].postMessage({command: "draw", payload: payload});
-//            }
-        },
-        renderFrameCount: function(delta){
-            if(Math.random() > 0.9){    
-                this.fps = Math.floor(1000/delta);
+        drawFallBack: function(){
+            var that = this;
+            if(this.running){
+                this.requestId = window.requestAnimationFrame(function(){
+                    that.drawFallBack();
+                });
             }
-            this.__bufferContext.clearRect(5, 5, 120, 30);
-            this.__bufferContext.beginPath();
-            this.__bufferContext.fillStyle = "#FF0000";
-            this.__bufferContext.font = "30px Arial";
-            this.__bufferContext.fillText("FPS: " + this.fps,  10, 30);
-            this.__bufferContext.closePath();
+            /*
+                To Be Implement for browser with no web worker support.
+            */
         },
         onWorkerReturn: function(e){
             var command = e.data.command;
             var _this = this;
             if(command === enums.command.updateObject){
-
                 var objects = e.data.objects;
                 for(var name in _this.objects){
                     _this.objects[name].update(objects[name]);
@@ -205,18 +154,14 @@ define([
         },
         initWorker: function(){
             var _this = this;
-            for(var i=0; i< this.__numOfThread; i+=1){
+            for(var i=0; i< this.numOfThread; i+=1){
                 var worker = new Worker("script/lib/worker.js");
                 worker.onmessage = function(e){
                     _this.onWorkerReturn(e);
                 }
-                this.__workers.push(worker);
+                this.workers.push(worker);
             }
-        },
-        model: function(name) {
-            return this.models.getByName(name);                
         }
-    };
-    
+    };  
     return AnimatedCanvas;
 });
