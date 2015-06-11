@@ -7,6 +7,7 @@
 define(function(){
     var MathUtil = {};
     
+    MathUtil.step = 1000/60;
     MathUtil.EasingFunctions = {
         // no easing, no acceleration
         linear: function (t) { return t },
@@ -36,11 +37,56 @@ define(function(){
         easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
     } 
     
-    MathUtil.simpleMove = function(obj){
-        
-        
-        
-    }
+    MathUtil.valueProjection = function(animation, progress){
+        var from = animation.from;
+        var to = animation.to;
+        var easing = MathUtil.EasingFunctions[animation.easing];
+        var result = {};
+        var keys = Object.keys(from);
+        var i = keys.length-1;
+        while(i >= 0) {
+            var key = keys[i];
+            if(from[key] !== to[key]) {
+                progress = easing(progress);
+                result[key] = from[key] * (1-progress) + to[key] * progress;
+            }else{
+                result[key] = from[key];
+            }
+            i-=1;    
+        }
+        return result;
+    };
+    
+    MathUtil.processKeyFrame = function(keyFrame){
+        var timeLapse = 0;
+        var step = MathUtil.step;
+        var duration = keyFrame.duration;
+        var result = {};
+        var animations = keyFrame.animations;
+        while(timeLapse <= duration) {
+            var frame = {};
+            for(var i=0, count = animations.length; i<count; i+=1) {
+                var animation = animations[i];
+                frame[animation.modelName] = MathUtil.valueProjection(animation, timeLapse/duration);
+            }
+            
+            result[Math.floor(timeLapse)] = frame;
+            timeLapse += step;
+        }
+        return result;      
+    };
+    
+    MathUtil.genToken = function(){
+        return Math.random().toString(16);    
+    };
+    
+    MathUtil.radians = function(degrees) {
+      return degrees * Math.PI / 180;
+    };
+    
+    MathUtil.degrees = function(radians) {
+      return radians * 180 / Math.PI;
+    };
     
     return MathUtil;
 });

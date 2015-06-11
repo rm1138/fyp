@@ -1,11 +1,28 @@
 importScripts("../external/require.js");
 var functionContainer = {};
 
-require(["enums", "loopUtil", "imgUtil"], function(enums, loopUtil, imgUtil){
-    var updateObjects = function(arr, delta) {
-        loopUtil.fastLoop(arr, imgUtil.calculateCoordinate);
-        return arr;
+require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, imgUtil, MathUtil){
+ 
+    onmessage = function(e){
+        var command = e.data.command;
+        var payload = e.data.payload;
+        if(command === enums.command.processKeyFrame){
+            var token = e.data.token;
+            var result = MathUtil.processKeyFrame(payload);
+            postMessage({command: command, payload: result, token: token});
+        }else if(command === enums.command.init){
+            console.info("Worker is inited");
+        }
     };
+    self.postMessage({
+        command: enums.command.ready
+    });
+});
+
+/*
+
+var ans = functionContainer["myFunct"]("abc");
+console.log(ans);
 
     onmessage = function(e){
         var command = e.data.command;
@@ -20,14 +37,5 @@ require(["enums", "loopUtil", "imgUtil"], function(enums, loopUtil, imgUtil){
             importScripts(url);
         }
     };
-    self.postMessage({
-        command: enums.command.ready
-    });
-});
-
-/*
-
-var ans = functionContainer["myFunct"]("abc");
-console.log(ans);
-
+    
 */

@@ -1,7 +1,7 @@
 define([
-        "lib/AnimatedCanvas"
-    ], function(AnimatedCanvas) {
-    return AnimatedCanvas;
+        "lib/Framework"
+    ], function(Framework) {
+    return Framework;
 });
 
 /*

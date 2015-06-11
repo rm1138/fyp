@@ -13,7 +13,15 @@ define(["lib/Global", "lib/enums"],
                     that.height = this.height;
                     Global.readyModelCount += 1;
                 };
+            }else if(obj.type === "canvasObject"){
+                this.img = document.createElement("canvas");
+                var ctx = img.getContext("2d");
+                /*
+                    To be implement
+                    Simple Canvas API
+                */
             }
+            this.name = obj.name;
             this.x = obj.x;
             this.y = obj.y;
             this.orientation = 0;
@@ -22,11 +30,18 @@ define(["lib/Global", "lib/enums"],
         };
     
         Model.prototype = {
-            update: function(obj){
+            __update: function(obj){
                 for(prop in obj){
                     this[prop] = obj[prop];    
                 }
-            },
+            }
+        }
+        return Model;
+});
+
+/*
+
+,
             resizeImage: function(img, quality){
                 var tempCanvas = document.createElement("canvas");
                 tempCanvas.width = img.width/quality;
@@ -44,6 +59,5 @@ define(["lib/Global", "lib/enums"],
                 image.src = canvas.toDataURL("image/png");
                 return image;
             }
-        }
-        return Model;
-});
+            
+*/

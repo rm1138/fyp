@@ -40,14 +40,5 @@ define(function(){
             obj.y = obj.originY + tempY;
        }
     }
-    var ImgUtil = {};
-    ImgUtil.checkCollision = function(screenW, screenH, objectBitMaps) {
-        var cache = [screenH];
-        while(--screenH){
-            cache[screenH] = new Uint8Array(screenW);
-        }
-        
-        console.log(cache);
-    }
     return ImgUtil;
 });

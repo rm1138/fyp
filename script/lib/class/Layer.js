@@ -1,23 +1,45 @@
 define([
         'class/Timeline',
+        'class/KeyFrame',
+        'class/Model',
         'class/Animation',
-        'class/Model'
-    ], function (Timeline, Animation, Model){
+        'lib/Global',
+        'lib/enums',
+        'lib/MathUtil'
+    ], function (Timeline, KeyFrame, Model, Animation, Global, enums, MathUtil){
     
-    var Layer = Layer || function(name){
+    var Layer = Layer || function(name, zIndex){
+        
         this.name = name;
         this.length = 0;
+        
         this.zIndexModelMapping = [];
         this.nameZIndexMapping = {};
+        
         this.timeline = new Timeline();
-        this.currentFrame = {};
-        this.readyToRender = true;
+        this.layerFrameTimer = 0;
+        
+        this.canvas = document.createElement("canvas");
+        this.bufferCanvas = document.createElement("canvas");
+        this.width = 0;
+        this.height = 0;
+        this.ctx = null;
+        this.bufferCtx = null;
+        
+        this.dirty = false;
+        
+        this.zIndex = 0;
+        this.state = enums.LayerState.stopped; 
+        if(zIndex){
+            this.canvas.style.zIndex = zIndex;
+            this.zIndex = zIndex;
+        }
     }
 
     Layer.prototype = {
+        //Public
         addModel: function(options){
             var that = this;
-            this.readyToRender = false;
             var model = new Model(options);
             if(typeof options.zIndex === "number"){
                 this.zIndexModelMapping.splice(options.zIndex, 0, model);
@@ -27,46 +49,111 @@ define([
                 this.nameZIndexMapping[model.name] = this.zIndexModelMapping.length - 1;
             }
             this.length += 1;
-            this.readyToRender = true;
-            console.log("Added Model on Layer: " + this.name); 
             return model;
         },
-        getZIndexModelMapping: function(){
+        __getZIndexModelMapping: function(){
             return this.zIndexModelMapping;
         },
-        getNameZIndexMapping: function(){
+        __getNameZIndexMapping: function(){
             return this.nameZIndexMapping;
         },
         removeModel: function(arg){
             //To Be Implement Object Pool
             if(typeof arg === "number"){
                 var name = this.zIndexModelMapping[arg].name;
-                this.zIndexModelMapping.remove(arg);
+                this.zIndexModelMapping.splice(arg, 1);
                 delete this.nameZIndexMapping[name];
             }else if (typeof arg === "string"){
                 var zIndex = this.nameZIndexMapping[arg];
                 delete this.nameZIndexMapping[arg];
-                this.zIndexModelMapping.remove(zIndex);
+                this.zIndexModelMapping.splice(zIndex, 1);
             }
             this.readyToRender = true;
         },
         getModelByName: function(name){
-            var zIndex = nameZIndexMapping[name];
+            var zIndex = this.nameZIndexMapping[name];
             return this.zIndexModelMapping[zIndex];    
         },
-        addKeyFrame: function(args) {
-            var names = Object.keys(args);
-            for(var i=0, length = names.length; i<length; i+=1){
-                
+//        addKeyFrame: function(animations, duration) {
+//            var formatedAnimation = [];
+//            for(var i=0, length = animations.length; i < length; i+=1) {
+//                var modelName = animations[i].modelName;  
+//                var animation = new Animation(this.getModelByName(modelName), animations[i].animation);
+//                formatedAnimation.push(animation);
+//            }
+//            var keyframe = new KeyFrame(formatedAnimation, duration);
+//            this.timeline.addKeyframe(keyframe);
+//        },
+        setZIndex: function(zIndex) {
+            this.zIndex = zIndex;    
+            this.canvas.style.zIndex = zIndex;
+        },
+        __delete: function(){
+            var canvas = this.canvas;
+            canvas.parentNode.removeChild(canvas);
+        },
+        createKeyframe: function(duration){
+            return new KeyFrame(duration);
+        },
+        commitKeyFrame: function(keyFrame){
+            Global.animator.preProcess(keyFrame, this);
+        },
+        play: function(){
+            if(this.state === enums.LayerState.stopped){
+                this.timeline.start();
+                this.state = enums.LayerState.playing;
             }
         },
-        getRenderData: function(){
-            if(this.currentFrame.remain <= 0){
-                    
-            }   
+        stop: function() {
+            if(this.state === enums.LayerState.playing){
+                this.timeline.stop();
+                this.state = enums.LayerState.stopped;
+            }
         },
-        delete: function(){
-            
+        __renderOnBuffer: function(){
+//            if(Global.modelCount !== Global.readyModelCount){
+//                return;                
+//            };
+            var frame = this.timeline.getFrame();
+            if(this.state === enums.LayerState.playing && frame !== undefined){
+                var renderModels = this.__getZIndexModelMapping();
+                var count = renderModels.length - 1;
+                var ctx = this.bufferCtx;
+                var model;
+                ctx.clearRect(0, 0, this.width, this.height);  
+                while(model = renderModels[count]){
+                    var animation = frame[model.name];
+                    if(animation.orientation !== 0){
+                        ctx.translate(animation.x, animation.y);
+                        ctx.rotate(-MathUtil.radians(animation.orientation));
+                        ctx.drawImage(
+                            model.img,
+                            -model.img.width/2, 
+                            -model.img.height/2
+                        );
+                        ctx.rotate(MathUtil.radians(animation.orientation));
+                        ctx.translate(-animation.x, -animation.y);
+                    }else{
+                        ctx.drawImage(
+                            model.img,
+                            animation.x, 
+                            animation.y
+                        );
+                    }
+                    count--;
+                }
+                this.dirty = true;
+            }else{
+                //this.stop();    
+            }
+        },
+        __render: function(){
+            if(this.dirty){
+                var ctx = this.ctx;                 
+                ctx.clearRect(0, 0, this.width, this.height);
+                ctx.drawImage(this.bufferCanvas, 0, 0);         
+                this.dirty = false;
+            }
         }
     }
 
