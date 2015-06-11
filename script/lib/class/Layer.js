@@ -111,9 +111,9 @@ define([
             }
         },
         __renderOnBuffer: function(){
-//            if(Global.modelCount !== Global.readyModelCount){
-//                return;                
-//            };
+            if(Global.modelCount !== Global.readyModelCount){
+                return;                
+            };
             var frame = this.timeline.getFrame();
             if(this.state === enums.LayerState.playing && frame !== undefined){
                 var renderModels = this.__getZIndexModelMapping();
@@ -122,24 +122,21 @@ define([
                 var model;
                 ctx.clearRect(0, 0, this.width, this.height);  
                 while(model = renderModels[count]){
+                    
                     var animation = frame[model.name];
-                    if(animation.orientation !== 0){
+                        ctx.globalAlpha = animation.opacity;
                         ctx.translate(animation.x, animation.y);
                         ctx.rotate(-MathUtil.radians(animation.orientation));
+                        ctx.scale(animation.scaleX, animation.scaleY);
                         ctx.drawImage(
                             model.img,
-                            -model.img.width/2, 
-                            -model.img.height/2
+                            -model.width/2, 
+                            -model.height/2
                         );
+                        ctx.scale(1/animation.scaleX, 1/animation.scaleY);
                         ctx.rotate(MathUtil.radians(animation.orientation));
                         ctx.translate(-animation.x, -animation.y);
-                    }else{
-                        ctx.drawImage(
-                            model.img,
-                            animation.x, 
-                            animation.y
-                        );
-                    }
+                    
                     count--;
                 }
                 this.dirty = true;

@@ -26,10 +26,8 @@ define(['lib/Global', 'lib/enums'], function(Global, enums){
         this.fpsCanvas.style.zIndex = "100";
         this.fpsCtx = this.fpsCanvas.getContext("2d");
         this.container.appendChild(this.fpsCanvas);
-        
-//        setInterval(function(){
-//            that.renderFrameCount();
-//        }, 1000);
+        this.renderFrameCount()
+
     };
     
     Renderer.prototype = {
@@ -59,12 +57,16 @@ define(['lib/Global', 'lib/enums'], function(Global, enums){
         renderFrameCount: function(){
             var fps = Math.floor(1000/this.delta);
             var ctx = this.fpsCtx;
-            ctx.clearRect(5, 5, 120, 30);
+            ctx.clearRect(5, 5, 200, 35);
             ctx.beginPath();
             ctx.fillStyle = "#FF0000";
             ctx.font = "30px Arial";
             ctx.fillText("FPS: " + fps,  10, 30);
             ctx.closePath();
+            var that = this;
+            setTimeout(function(){
+                that.renderFrameCount();
+            }, 1000);
         },
         initLayer: function(layer){
             var canvas = layer.canvas;

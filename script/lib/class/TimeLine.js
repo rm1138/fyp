@@ -14,7 +14,6 @@ define(function (){
 
         },
         start: function(){ 
-
             if(this.playingKeyFrame === null && this.keyframes.length > 0){
                 var tempFrame = this.keyframes.pop();
                 this.playedFrames.push(tempFrame);
@@ -32,7 +31,7 @@ define(function (){
                 if(delta - keys[this.lastKeyIndex-1] < keys[this.lastKeyIndex] - delta){
                     return this.playingKeyFrame[keys[this.lastKeyIndex-1]];    
                 } else {
-                return this.playingKeyFrame[keys[this.lastKeyIndex]];
+                    return this.playingKeyFrame[keys[this.lastKeyIndex]];
                 }
             }
             return undefined;

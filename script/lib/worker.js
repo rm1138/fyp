@@ -11,7 +11,7 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
             var result = MathUtil.processKeyFrame(payload);
             postMessage({command: command, payload: result, token: token});
         }else if(command === enums.command.init){
-            console.info("Worker is inited");
+            //console.info("Worker is inited");
         }
     };
     self.postMessage({

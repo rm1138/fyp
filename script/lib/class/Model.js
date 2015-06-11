@@ -8,7 +8,7 @@ define(["lib/Global", "lib/enums"],
                 var img = new Image();
                 img.src = obj.url;
                 img.onload = function(){
-                    that.img = this;//that.resizeImage(this,1.2);    
+                    that.img = this;//that.rasterize(this);    
                     that.width = this.width;
                     that.height = this.height;
                     Global.readyModelCount += 1;
@@ -26,7 +26,8 @@ define(["lib/Global", "lib/enums"],
             this.y = obj.y;
             this.orientation = 0;
             this.opacity = 1.0;
-            this.enlargeRatio = 1.0;
+            this.scaleX  = 1.0;
+            this.scaleY  = 1.0;
         };
     
         Model.prototype = {
@@ -34,13 +35,38 @@ define(["lib/Global", "lib/enums"],
                 for(prop in obj){
                     this[prop] = obj[prop];    
                 }
+            },
+            rasterize: function(img){
+                var tempCanvas = document.createElement("canvas");
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                var tempCtx = tempCanvas.getContext("2d");
+                tempCtx.drawImage(img, 0, 0);
+                return this.convertCanvasToImage(tempCanvas);
+            },
+            convertCanvasToImage: function (canvas) {
+                var image = new Image();
+                image.src = canvas.toDataURL("image/png");
+                return image;
             }
         }
         return Model;
 });
 
 /*
-
+            convertToCtx: function(img){
+                var tempCanvas = document.createElement("canvas");
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                var tempCtx = tempCanvas.getContext("2d");
+                tempCtx.drawImage(img, 0, 0);
+                return this.convertCanvasToImage(tempCanvas);
+            },
+            convertCanvasToImage: function (canvas) {
+                var image = new Image();
+                image.src = canvas.toDataURL("image/png");
+                return image;
+            }
 ,
             resizeImage: function(img, quality){
                 var tempCanvas = document.createElement("canvas");
