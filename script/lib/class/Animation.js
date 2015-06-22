@@ -16,6 +16,13 @@ define(['lib/MathUtil'], function(MathUtil){
             scaleX : animation.scaleX ?animation.scaleX :model.scaleX,
             scaleY : animation.scaleY ?animation.scaleY :model.scaleY    
         };
+        var to = this.to;
+        model.x = to.x;
+        model.y = to.y;
+        model.orientation = to.orientation;
+        model.opacity = to.opacity;
+        model.scaleX = to.scaleX;
+        model.scaleY = to.scaleY;
         //pre-format the easing function
         this.easing = MathUtil.EasingFunctions[animation.easing]?animation.easing:"linear";
         this.modelName = model.name;

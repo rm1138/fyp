@@ -1,43 +1,43 @@
-define(function (){
+define(["lib/Global"], function (Global){
     
     var Timeline = Timeline || function(){
         this.keyframes = [];
         this.playedFrames = [];
-        this.playingKeyFrame = null;
-        this.playingKeyFrameStartTime = 0;
         this.lastKeyIndex = 0;
+        this.playingFrameSet = null;
+        this.playingFrameSetKeys = null;
+        this.lastFrameSwapTime = new Date().getTime();
+        this.fps = 0;
     };
 
     Timeline.prototype = {
         addKeyframe: function(frame) {
             this.keyframes.push(frame);
-
-        },
-        start: function(){ 
-            if(this.playingKeyFrame === null && this.keyframes.length > 0){
-                var tempFrame = this.keyframes.pop();
-                this.playedFrames.push(tempFrame);
-                this.playingKeyFrame = tempFrame;
-                this.playingKeyFrameStartTime = new Date().getTime();
-            }
         },
         getFrame: function(){
-            if(this.playingKeyFrame !== null){
-                var delta = new Date().getTime() - this.playingKeyFrameStartTime;
-                var keys = Object.keys(this.playingKeyFrame);
-                while(delta >= keys[this.lastKeyIndex]){
-                    this.lastKeyIndex++;    
-                }
-                if(delta - keys[this.lastKeyIndex-1] < keys[this.lastKeyIndex] - delta){
-                    return this.playingKeyFrame[keys[this.lastKeyIndex-1]];    
-                } else {
-                    return this.playingKeyFrame[keys[this.lastKeyIndex]];
-                }
+            if(this.playingFrameSet === null && this.keyframes.length > 0){
+                this.playingFrameSet = this.keyframes.shift();
+                this.playingFrameSetKeys = Object.keys(this.playingFrameSet);
+                this.playedFrames.push(this.playingFrameSet);
+                this.lastKeyIndex = 0;
             }
-            return undefined;
-        },
-        stop: function(){
-            this.playingKeyFrame === null;
+            
+            if(this.playingFrameSet === null) {
+                return undefined;
+            }
+
+            var keys = this.playingFrameSetKeys;
+
+            if(this.lastKeyIndex >= keys.length){
+                this.playingFrameSet = null; 
+                console.log("Next key frame");
+                var temp = new Date().getTime()
+                Global.FrameSwapLimit = (temp - this.lastFrameSwapTime);
+                this.lastFrameSwapTime = temp;
+                console.log(Global.FrameSwapLimit);
+                return this.getFrame();
+            }
+            return this.playingFrameSet[keys[this.lastKeyIndex++]]; 
         },
         reverse: function(){
             var temp = this.keyframes.reverse();

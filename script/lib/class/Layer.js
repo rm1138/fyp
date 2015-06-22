@@ -93,22 +93,15 @@ define([
             canvas.parentNode.removeChild(canvas);
         },
         createKeyframe: function(duration){
-            return new KeyFrame(duration);
-        },
-        commitKeyFrame: function(keyFrame){
-            Global.animator.preProcess(keyFrame, this);
+            return new KeyFrame(duration, this);
         },
         play: function(){
-            if(this.state === enums.LayerState.stopped){
-                this.timeline.start();
-                this.state = enums.LayerState.playing;
-            }
+            this.state = enums.LayerState.playing;
+            console.log("started");
         },
         stop: function() {
-            if(this.state === enums.LayerState.playing){
-                this.timeline.stop();
-                this.state = enums.LayerState.stopped;
-            }
+            this.state = enums.LayerState.stopped;
+            console.log("stopped");
         },
         __renderOnBuffer: function(){
             if(Global.modelCount !== Global.readyModelCount){
@@ -140,8 +133,6 @@ define([
                     count--;
                 }
                 this.dirty = true;
-            }else{
-                //this.stop();    
             }
         },
         __render: function(){

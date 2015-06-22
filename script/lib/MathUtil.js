@@ -58,12 +58,13 @@ define(function(){
     };
     
     MathUtil.processKeyFrame = function(keyFrame){
-        var timeLapse = 0;
+        var timeLapse = keyFrame.processStart;
+        var end = keyFrame.processEnd;
         var step = MathUtil.step;
         var duration = keyFrame.duration;
         var result = {};
         var animations = keyFrame.animations;
-        while(timeLapse <= duration) {
+        while(timeLapse <= end) {
             var frame = {};
             for(var i=0, count = animations.length; i<count; i+=1) {
                 var animation = animations[i];
@@ -74,10 +75,6 @@ define(function(){
             timeLapse += step;
         }
         return result;      
-    };
-    
-    MathUtil.genToken = function(){
-        return Math.random().toString(16);    
     };
     
     MathUtil.radians = function(degrees) {

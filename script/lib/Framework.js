@@ -48,6 +48,7 @@ define([
             console.info("DOM Element not found");
             return null;    
         }       
+        console.log("Framework Inited");
     };
 
     Framework.prototype = {
@@ -73,6 +74,7 @@ define([
             return this.layers[index];            
         },
         start: function () {
+            
             if(!this.requestId){
                 this.running = true;
                 this.__ticking();
@@ -95,7 +97,7 @@ define([
                 var layers = this.layers;
                 renderer.render(layers);
                 renderer.renderOnBuffer(layers);
-                this.animator.animate();
+                this.animator.processFrame();
             }
         }
     };  

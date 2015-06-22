@@ -53,6 +53,7 @@ define(['lib/Global', 'lib/enums'], function(Global, enums){
                 index--;
             }
             this.delta = delta;
+            this.__throttling();
         },
         renderFrameCount: function(){
             var fps = Math.floor(1000/this.delta);
@@ -88,6 +89,9 @@ define(['lib/Global', 'lib/enums'], function(Global, enums){
         },
         deleteLayerCanvas: function(name){
             delete this.isLayerDirty[name];
+        },
+        __throttling: function() {
+            
         }
     };
     

@@ -7,11 +7,11 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
         var command = e.data.command;
         var payload = e.data.payload;
         if(command === enums.command.processKeyFrame){
-            var token = e.data.token;
             var result = MathUtil.processKeyFrame(payload);
-            postMessage({command: command, payload: result, token: token});
+            //console.log("Process " + payload.processStart + " ready");
+            postMessage({command: command, payload: result, layerName: e.data.layerName});
         }else if(command === enums.command.init){
-            //console.info("Worker is inited");
+            console.info("Worker is inited");
         }
     };
     self.postMessage({
