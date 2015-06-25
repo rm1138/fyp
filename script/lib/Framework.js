@@ -1,14 +1,9 @@
 define([
-        'underscore',
         'lib/enums',
-        'class/Model',
-        'class/Layer',
-        'lib/imgUtil',
-        'lib/loopUtil',
         'lib/Renderer',
-        'lib/Animator',
-        'lib/Global',
-    ], function(_, enums, AnimatedModel, Layer, ImgUtil, loopUtil, Renderer, Animator, Global){
+        'class/Layer',
+        'lib/AnimationManager'
+    ], function(enums, Renderer, Layer, AnimationManager){
     "use strict";
     (function() {
         var lastTime = 0;
@@ -39,42 +34,47 @@ define([
     var Framework = Framework || function (canvasDomID) {
         this.running = false;
         this.requestId = 0;
+        this.renderer = new Renderer(canvasDomID);
         this.layers = [];
-        this.renderer = new Renderer(canvasDomID, this.layers);
-        this.animator = new Animator();
-        Global.animator = this.animator;
-        
-         if(this.renderer === null){
-            console.info("DOM Element not found");
-            return null;    
+        this.animationManager = new AnimationManager();
+        if(this.renderer === null){
+            console.log("DOM Element not found");
+            return undefined;    
         }       
         console.log("Framework Inited");
     };
 
     Framework.prototype = {
-        createLayer: function(name, zIndex) {
-            var tempLayer = new Layer(name, zIndex);
-            this.layers.push(tempLayer);
-            this.renderer.initLayer(tempLayer);
-            return tempLayer;
+        createLayer: function(name, zIndex){
+            var layer = new Layer(name, zIndex);
+            this.layers.push(layer);
+            this.renderer.initLayer(layer);
+            this.animationManager.addLayer(name);
+            return layer;
         },
         deleteLayer: function(name){
-            var index = _.findIndex(this.layers, function(item){
-                return item.name === name;    
-            });
-            var layer = this.layers[index];
-            layer.delete();
-            this.layers.splice(index, 1);
-            this.renderer.deleteLayerCanvas(name);
+            var layer = this.getLayer(name);
+            if(layer){
+                var layers = this.layers;
+                var index = layers.indexOf(layer);  
+                layer.__delete();
+                layers.splice(index, 1);
+                this.animationManager.removeLayer(name);
+                return true;
+            }
+            return false;
         },
         getLayer: function(name) {
-            var index = _.findIndex(this.layers, function(item){
-                return item.name === name;    
-            });
-            return this.layers[index];            
+            var layers = this.layers;
+            var i = layers.length;
+            while(i--){
+                if(layers[i].name === name){
+                    break;
+                }
+            }
+            return layers[i];
         },
-        start: function () {
-            
+        start: function () { 
             if(!this.requestId){
                 this.running = true;
                 this.__ticking();
@@ -93,11 +93,7 @@ define([
                 this.requestId = window.requestAnimationFrame(function(){
                     that.__ticking();
                 });
-                var renderer = this.renderer;
-                var layers = this.layers;
-                renderer.render(layers);
-                renderer.renderOnBuffer(layers);
-                this.animator.processFrame();
+                this.renderer.render(this.layers);
             }
         }
     };  

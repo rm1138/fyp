@@ -43,60 +43,50 @@ define(function(){
         var easing = MathUtil.EasingFunctions[animation.easing];
         var result = {};
         var keys = Object.keys(from);
-        var i = keys.length-1;
-        while(i >= 0) {
+        var i = keys.length;
+        while(i--) {
             var key = keys[i];
             if(from[key] !== to[key]) {
                 progress = easing(progress);
                 result[key] = from[key] * (1-progress) + to[key] * progress;
             }else{
                 result[key] = from[key];
-            }
-            i-=1;    
+            }   
         }
         return result;
     };
     
-    MathUtil.processKeyFrame = function(keyFrame){
-        var timeLapse = keyFrame.processStart;
-        var end = keyFrame.processEnd;
+    MathUtil.processKeyFrame = function(keyFrame, start, end, step){
+        var timeLapse = start;
+        var end = end;
         var step = MathUtil.step;
         var duration = keyFrame.duration;
-        var result = {};
+        var result = [];
         var animations = keyFrame.animations;
+        var i = 0;
         while(timeLapse <= end) {
             var frame = {};
             for(var i=0, count = animations.length; i<count; i+=1) {
                 var animation = animations[i];
                 frame[animation.modelName] = MathUtil.valueProjection(animation, timeLapse/duration);
             }
-            
-            result[Math.floor(timeLapse)] = frame;
+            result.push(frame);
             timeLapse += step;
         }
         return result;      
     };
     
     MathUtil.radians = function(degrees) {
-      return degrees * Math.PI / 180;
+        return degrees * Math.PI / 180;
     };
     
     MathUtil.degrees = function(radians) {
-      return radians * 180 / Math.PI;
+        return radians * 180 / Math.PI;
     };
+    
+    MathUtil.genRandomId = function() {
+        return Math.random().toString(36).substr(2, 5);   
+    }
     
     return MathUtil;
 });
-
-/*
-obj = {
-    x: 100,
-    y: 200,
-    
-
-
-
-}
-
-
-*/

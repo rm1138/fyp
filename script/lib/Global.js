@@ -1,9 +1,9 @@
 define(function(){
-    var Globle = {
+    var Global = {
         debug: true,
         modelCount: 0,
         readyModelCount: 0
     };
     
-    return Globle;
+    return Global;
 });

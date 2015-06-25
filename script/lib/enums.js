@@ -6,13 +6,18 @@ define(function(){
             Rect: 2,
             Cycle: 3
         },
-        command:{
-            error: -1,
-            init: 0,
-            ready: 1,
-            updateObject: 2,
-            injectFunction: 3,
-            processKeyFrame: 4
+        Command:{
+            Worker: {
+                Init: "Worker Init",
+                Ready: "Worker Ready",
+                ProcessKeyFrame: "Worker Process Key Frame"
+            }
+        },
+        Timeline:{
+            PlaybackDirection:{
+                forward: "forward",
+                backward: "backward"
+            }
         },
         LayerProperties:{
             UI: 1,
