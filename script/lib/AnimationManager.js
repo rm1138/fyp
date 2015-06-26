@@ -1,4 +1,4 @@
-define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil, Timeline) {
+define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
     var AnimationManager = AnimationManager || function () {
         //throttling
         if(AnimationManager.instance) {
@@ -10,11 +10,13 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
         if(window.Worker){
             this.numOfThread = navigator.hardwareConcurrency || 4;
             this.workers = [];
+            this.channels = [];
             this.initWorker();
             this.supportWorker = true;
+            this.readyWorker = 0;
         }
         AnimationManager.instance = this;
-        this.timelines = {};
+        this.getFrameCallBack = {};
         return this;
     };
     
@@ -26,34 +28,78 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
             var that = this;
             if(command === enums.Command.Worker.ProcessKeyFrame){
                 console.log(payload);
-                this.timelines[payload.layerName].frames[payload.order] = payload.frames;
+                //this.timelines[payload.layerName].frames[payload.order] = payload.frames;
                 //console.log(payload.order);
             } else if(command === enums.Command.Worker.Ready) {
                 e.target.postMessage({
                     command: enums.Command.Worker.Init,
                     payload: {}
-                });    
+                }, [that.channels[that.readyWorker++].port2]);    
+            }
+        },
+        onTimeWorkerReturn: function(e){
+            var command = e.data.command;
+            var payload = e.data.payload;
+
+            var that = this;
+            if(command === enums.Command.TimelineWorker.GetFrame) {
+                that.getFrameCallBack[payload.id](payload.frame);
+            }else if(command === enums.Command.TimelineWorker.Ready){ 
+                var i = that.channels.length;
+                while(i--){
+                    e.target.postMessage({
+                        command: enums.Command.TimelineWorker.Init,
+                        payload: {}
+                    }, [that.channels[i].port1]);
+                }
             }
         },
         initWorker: function(){
             var that = this;
             var i = this.numOfThread - 1
+            var timelineWorker = new Worker("script/lib/TimelineWorker.js");
+            var channel = new MessageChannel();
+            timelineWorker.onmessage = function(e){
+                that.onTimeWorkerReturn(e);    
+            };
+            this.timelineWorker = timelineWorker;
             while(i--){
                 var worker = new Worker("script/lib/Worker.js");
                 worker.onmessage = function(e){
                     that.onWorkerReturn(e);
                 };
                 this.workers.push(worker);
+                var messageChannel = new MessageChannel();
+                this.channels.push(messageChannel);
             }
         },
         addLayer: function(layerName) {
-            this.timelines[layerName] = new Timeline();
+            this.timelineWorker.postMessage({
+                command: enums.Command.TimelineWorker.AddLayer,
+                payload: {
+                    layerName: layerName
+                }
+            });
         },
         removeLayer: function(layName) {
-            delete this.timelines[layerName];
+            this.timelineWorker.postMessage({
+                command: enums.Command.TimelineWorker.RemoveLayer,
+                payload: {
+                    layerName: layerName
+                }
+            });
         },
-        getFrame: function(layerName) {
-            return this.timelines[layerName].getFrame();   
+        getFrame: function(layerName, funct) {
+            var id = MathUtil.genRandomId();
+            this.getFrameCallBack[id] = funct;
+            this.timelineWorker.postMessage({
+                command: enums.Command.TimelineWorker.GetFrame,
+                payload: {
+                    layerName: layerName,
+                    id: id
+                }
+            });
+            return undefined
         },
         processKeyFrame: function(keyFrame) {
             var command = enums.Command.Worker.ProcessKeyFrame;
@@ -75,7 +121,6 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
                     command: command, 
                     payload: payload
                 });
-                console.log(payload);
                 batchSize *= 2;
                 payload.order += this.workerReturnFactor;
                 payload.start = payload.end;

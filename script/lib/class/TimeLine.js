@@ -1,4 +1,4 @@
-define(['lib/enums'], function (enums){
+define(['enums'], function (enums){
     
     var Timeline = Timeline || function(){
         this.frames = [];
@@ -6,7 +6,6 @@ define(['lib/enums'], function (enums){
         this.playingFrameSetKeys = null;
         this.framesIndex = 0;
         this.frameSetIndex = 0;
-        this.playBackDirection = enums.Timeline.PlaybackDirection.forward;
     };
 
     Timeline.prototype = {
@@ -22,38 +21,19 @@ define(['lib/enums'], function (enums){
             var frameSetIndex = this.frameSetIndex;
             if(frameSet = frames[framesIndex]) {
                 if(frameSet[frameSetIndex]){
-                    if(this.playBackDirection === enums.Timeline.PlaybackDirection.forward){
+
                         return frameSet[this.frameSetIndex++];
-                    }else{
-                        return frameSet[this.frameSetIndex--];
-                    }
+
                 }else{
-                    if(this.playBackDirection === enums.Timeline.PlaybackDirection.forward){
+
                         this.frameSetIndex = 0;
                         this.framesIndex++;
-                    }else{
-                        this.framesIndex--;
-                        if(this.frames[this.framesIndex]){
-                            this.frameSetIndex = this.frames[this.framesIndex].length - 1;
-                        }
-                    }
- 
+  
                     return this.getFrame();
                 }
             }
-  
-            if(this.playBackDirection === enums.Timeline.PlaybackDirection.forward){
-                this.framesIndex--;
-                if(this.frames[this.framesIndex]){
-                    this.frameSetIndex = this.frames[this.framesIndex].length - 1;
-                }
-                this.playBackDirection = enums.Timeline.PlaybackDirection.backward;
-            }else{
-                this.framesIndex++;
-                this.frameSetIndex = 0;
-                this.playBackDirection = enums.Timeline.PlaybackDirection.forward;
-            }
-            return this.getFrame();
+            this.clear();
+            return undefined;
 //            if(this.playingFrameSet === null && this.keyframes.length > 0){
 //                this.playingFrameSet = this.keyframes.shift();
 //                this.playingFrameSetKeys = Object.keys(this.playingFrameSet);
@@ -86,6 +66,8 @@ define(['lib/enums'], function (enums){
         clear: function(){
             this.keyframes = [];
             this.playedFrames = []; 
+            this.framesIndex = 0;
+            this.frameSetIndex = 0;
         },
         getRemainFrameCount: function(){
             return this.keyframes.length;    

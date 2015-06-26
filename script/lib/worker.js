@@ -2,10 +2,10 @@ importScripts("../external/require.js");
 var functionContainer = {};
 
 require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, imgUtil, MathUtil){
-    
-    var init = function (payload) {
-        
-    }
+    var channelPort;
+    var getChannelMessage = function(e) {
+        console.log(e);
+    };
     onmessage = function(e){
         var command = e.data.command;
         var payload = e.data.payload;
@@ -26,14 +26,15 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
                     end: i + processLimit,
                     workerId: payload.workerId
                 }
-                self.postMessage({
+                channelPort.postMessage({
                     command: command,
                     payload: resultPayload
                 });
             }
             
         }else if(command === enums.Command.Worker.Init){
-            init(payload);
+            channelPort = e.ports[0];
+            channelPort.onmessage = getChannelMessage;
         }
     };
     self.postMessage({

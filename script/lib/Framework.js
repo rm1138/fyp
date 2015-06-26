@@ -31,7 +31,7 @@ define([
     }());
 
     //constructor
-    var Framework = Framework || function (canvasDomID) {
+    var Framework = Framework || function (canvasDomID, readyCall) {
         this.running = false;
         this.requestId = 0;
         this.renderer = new Renderer(canvasDomID);

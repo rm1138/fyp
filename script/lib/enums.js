@@ -11,6 +11,13 @@ define(function(){
                 Init: "Worker Init",
                 Ready: "Worker Ready",
                 ProcessKeyFrame: "Worker Process Key Frame"
+            },
+            TimelineWorker: {
+                Init: "Timeline Worker Init",
+                Ready: "Timeline Worker Ready",
+                AddLayer: "Timeline Worker addlayer",
+                RemoveLayer: "Timeline Worker removelayer",
+                GetFrame: "Timeline Worker getframe"
             }
         },
         Timeline:{
