@@ -31,7 +31,7 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
                 }, [frames.buffer]);
                 i+= totalWorker;
                 if(i < duration / processLimit){
-                    setTimeout(myfunc, 100);
+                    setTimeout(myfunc, processLimit);
                 }
             };
             myfunc();

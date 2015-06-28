@@ -56,6 +56,7 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
             return result;
         },
         processKeyFrame: function(keyFrame) {
+            this.layers[keyFrame.layerName].clear();
             var command = enums.Command.Worker.ProcessKeyFrame;
             var workers = this.workers;
             var processStep = this.step;

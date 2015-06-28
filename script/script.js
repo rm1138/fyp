@@ -10,7 +10,7 @@ require(['lib/main'], function(Framework){
     var model = [];
     setTimeout(function(){
         layer = fw.createLayer("layer0");
-        for(var i=0; i<1000; i++){
+        for(var i=0; i<200; i++){
             model[i] = layer.addModel({
                 type: "image",
                 x: Math.random() * container.width,
@@ -28,11 +28,12 @@ require(['lib/main'], function(Framework){
 
     
     container.addEventListener("click", function(){
-        var mykeyframe = layer.createKeyframe(10000, function(){
+        setInterval(function(){
+        var mykeyframe = layer.createKeyframe(1000, function(){
             console.log("my frame is completed");
         });
         var easing = "linear";
-        for(var i=0; i<1000; i++){
+        for(var i=0; i<200; i++){
             mykeyframe.addAnimation(model[i], {
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
@@ -44,6 +45,7 @@ require(['lib/main'], function(Framework){
             });
         }
         mykeyframe.commit();  
+        }, 1000);
     }, false);
 });
 //
