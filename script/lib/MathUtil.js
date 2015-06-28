@@ -37,27 +37,26 @@ define(function(){
         easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
     } 
     
-    MathUtil.valueProjection = function(animation, progress){
+    MathUtil.valueProjection = function(animation, progress, frame){
         var from = animation.from;
         var to = animation.to;
         var easing = MathUtil.EasingFunctions[animation.easing];
-        var result = {};
         var keys = Object.keys(from);
         var i = keys.length;
+        frame.push(animation.modelName);
         while(i--) {
             var key = keys[i];
             if(from[key] !== to[key]) {
                 progress = easing(progress);
-                result[key] = from[key] * (1-progress) + to[key] * progress;
+                frame.push(from[key] * (1-progress) + to[key] * progress);
             }else{
-                result[key] = from[key];
+                 frame.push(from[key]);
             }   
         }
-        return result;
     };
     
     MathUtil.processKeyFrame = function(keyFrame, start, end, step){
-        var timeLapse = start;
+        var timeLapse = start + (step - (start % step));
         var end = end;
         var step = MathUtil.step;
         var duration = keyFrame.duration;
@@ -65,14 +64,15 @@ define(function(){
         var animations = keyFrame.animations;
         var i = 0;
         while(timeLapse <= end) {
-            var frame = {};
+            var frame = [];
             for(var i=0, count = animations.length; i<count; i+=1) {
                 var animation = animations[i];
-                frame[animation.modelName] = MathUtil.valueProjection(animation, timeLapse/duration);
+                MathUtil.valueProjection(animation, timeLapse/duration, frame);
             }
-            result.push(frame);
+            result = result.concat(frame);
             timeLapse += step;
         }
+        console.log(result);
         return result;      
     };
     

@@ -32,9 +32,12 @@ define(["lib/Global", "lib/enums"],
     
         Model.prototype = {
             __update: function(obj){
-                for(prop in obj){
-                    this[prop] = obj[prop];    
-                }
+                this.x = obj.x;
+                this.y = obj.y;
+                this.orientation = obj.orientation;
+                this.opacity = obj.opacity;
+                this.scaleX  = obj.scaleX;
+                this.scaleY  = obj.scaleY;
             },
             rasterize: function(img){
                 var tempCanvas = document.createElement("canvas");

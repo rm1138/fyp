@@ -5,10 +5,10 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
             return AnimationManager.instance;    
         }
         this.step = MathUtil.step;                //process frame step
-        this.workerReturnFactor = 2;
+        this.batchSize = 1000;
         this.supportWorker = false;
         if(window.Worker){
-            this.numOfThread = navigator.hardwareConcurrency || 4;
+            this.numOfThread = 3;//navigator.hardwareConcurrency || 4;
             this.workers = [];
             this.channels = [];
             this.initWorker();
@@ -16,7 +16,10 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
             this.readyWorker = 0;
         }
         AnimationManager.instance = this;
-        this.getFrameCallBack = {};
+        this.layerFrameSetBuffer = {};
+        this.layerFrameSetIndex = {};
+        this.layerFrameSetStartTime = {};
+        this.layerRequestFlag = {};
         return this;
     };
     
@@ -26,11 +29,7 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
             var payload = e.data.payload;
 
             var that = this;
-            if(command === enums.Command.Worker.ProcessKeyFrame){
-                console.log(payload);
-                //this.timelines[payload.layerName].frames[payload.order] = payload.frames;
-                //console.log(payload.order);
-            } else if(command === enums.Command.Worker.Ready) {
+            if(command === enums.Command.Worker.Ready) {
                 e.target.postMessage({
                     command: enums.Command.Worker.Init,
                     payload: {}
@@ -42,8 +41,13 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
             var payload = e.data.payload;
 
             var that = this;
-            if(command === enums.Command.TimelineWorker.GetFrame) {
-                that.getFrameCallBack[payload.id](payload.frame);
+            if(command === enums.Command.TimelineWorker.GetFrameSet) {
+                console.log("got frame");
+                (this.layerFrameSetBuffer[payload.layerName]).push(payload.frameSetObj);
+                this.layerRequestFlag[payload.layerName] = false;   
+            }else if(command === enums.Command.TimelineWorker.NoFrame) {
+                console.log("no frame");
+                this.layerRequestFlag[payload.layerName] = false;   
             }else if(command === enums.Command.TimelineWorker.Ready){ 
                 var i = that.channels.length;
                 while(i--){
@@ -56,7 +60,7 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
         },
         initWorker: function(){
             var that = this;
-            var i = this.numOfThread - 1
+            var i = this.numOfThread - 2
             var timelineWorker = new Worker("script/lib/TimelineWorker.js");
             var channel = new MessageChannel();
             timelineWorker.onmessage = function(e){
@@ -80,6 +84,9 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
                     layerName: layerName
                 }
             });
+            this.layerFrameSetBuffer[layerName] = [];
+            this.layerFrameSetIndex[layerName] = 0;
+            this.layerFrameSetStartTime[layerName] = 0;
         },
         removeLayer: function(layName) {
             this.timelineWorker.postMessage({
@@ -88,48 +95,83 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
                     layerName: layerName
                 }
             });
+            delete this.layerFrameSetBuffer[layerName];
+            delete this.layerFrameSetIndex[layerName];
+            delete this.layerFrameSetStartTime[layerName];
         },
         getFrame: function(layerName, funct) {
-            var id = MathUtil.genRandomId();
-            this.getFrameCallBack[id] = funct;
-            this.timelineWorker.postMessage({
-                command: enums.Command.TimelineWorker.GetFrame,
-                payload: {
-                    layerName: layerName,
-                    id: id
+            var layerFrameSetStartTime =this.layerFrameSetStartTime[layerName]
+            var index = this.layerFrameSetIndex[layerName]
+            var layerFrameSetBuffer = this.layerFrameSetBuffer[layerName][index];
+            if(layerFrameSetBuffer){
+                if(layerFrameSetStartTime === 0 ){
+                    var temp = new Date().getTime();
+                    this.layerFrameSetStartTime[layerName] = temp;
+                    layerFrameSetStartTime = temp;
                 }
-            });
-            return undefined
+                var frameTime = (new Date().getTime() - layerFrameSetStartTime) / this.step;
+                frameTime = Math.round(frameTime);
+                var result = layerFrameSetBuffer[frameTime];
+
+                if(layerFrameSetBuffer.length - frameTime <= 20 && index === this.layerFrameSetBuffer[layerName].length - 1){
+                    this.__fetchNextFrameSet(layerName);               
+                }
+                
+                if(result) {
+                    funct(result);
+                }else{
+                    if(index < this.layerFrameSetBuffer[layerName].length){
+                        this.layerFrameSetIndex[layerName]++;
+                        this.layerFrameSetStartTime[layerName] = new Date().getTime();
+                        console.log("shifted frame set");
+                    }
+                    this.getFrame(layerName, funct);
+                }
+            }else{
+                this.__fetchNextFrameSet(layerName);
+            }
+        },
+        __fetchNextFrameSet: function(layerName) {
+            
+            if(!this.layerRequestFlag[layerName]){
+                this.layerRequestFlag[layerName]= true;
+                console.log("__fetchNextFrameSet");
+                this.timelineWorker.postMessage({
+                    command: enums.Command.TimelineWorker.GetFrameSet,
+                    payload: {
+                        layerName: layerName
+                    }
+                });
+            }
         },
         processKeyFrame: function(keyFrame) {
+            this.layerFrameSetBuffer[keyFrame.layerName] = [];
+            this.layerFrameSetIndex[keyFrame.layerName] = 0;
+            this.layerFrameSetStartTime[keyFrame.layerName] = 0;
+            
+            this.timelineWorker.postMessage({
+                command: enums.Command.TimelineWorker.ResetLayer,
+                payload: {
+                    layerName: keyFrame.layerName    
+                }
+            });
             var command = enums.Command.Worker.ProcessKeyFrame;
             var workers = this.workers;
-            var batchSize = Math.round(keyFrame.duration / Math.pow(2, workers.length));
-            var step = this.step;
+            var processStep = this.step;
             var payload = {    
                 keyFrame: keyFrame,
-                start: 0,
-                end: batchSize,
-                processLimit: null,
-                step: step,
-                order: 0
+                processLimit: this.batchSize,
+                processStep: processStep,
+                batchOrder: 0,
+                totalWorker: workers.length
             };
             var i = workers.length;
             while(i--){
-                payload.processLimit = Math.floor((payload.end - payload.start)/this.workerReturnFactor);
                 this.workers[i].postMessage({
                     command: command, 
                     payload: payload
                 });
-                batchSize *= 2;
-                payload.order += this.workerReturnFactor;
-                payload.start = payload.end;
-                if(i === 1){
-                    payload.end = keyFrame.duration;
-                }else{
-                    payload.end += batchSize;
-                }
-                
+                payload.batchOrder++;
             }
 
         },
@@ -140,61 +182,3 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
     
     return AnimationManager;
 });
-
-
-/*
-        onWorkerReturn: function(e){
-            var Command = e.data.Command;
-            var payload = e.data.payload;
-            var that = this;
-            if(Command === enums.Command.processKeyFrame){
-                var layerName = e.data.layerName;
-                var layer = that.layerLookup[layerName];
-                layer.timeline.addKeyframe(payload);
-                this.workerReturnCount += 1;
-                console.log("worker returned");
-            } else if(Command === enums.Command.ready) {
-                e.target.postMessage({Command: enums.Command.initAsWorkerManager, payload: {}});    
-            }
-        },
-
-
-            var queue = this.processQueue;
-            if(queue.length > 0){
-                var keyFrame;
-                var partly;
-                var remain = queue[0].duration - queue[0].lastProcessMark;
-                if(remain <= this.processLimit){
-                    keyFrame = queue.shift();
-                    partly = false;
-                } else {
-                    keyFrame = queue[0];    
-                    partly = true;
-                }
-                
-                var end = (partly)? keyFrame.lastProcessMark + this.processLimit : keyFrame.duration;
-                var payload = {
-                    animations: keyFrame.animations,
-                    duration: keyFrame.duration,
-                    processStart: keyFrame.lastProcessMark,
-                    processEnd: end
-                };
-                    
-                if(this.supportWorker && this.readyWorker === this.numOfThread) {
-
-                    var layerName = keyFrame.layer.name;
-                    this.layerLookup[layerName] = keyFrame.layer;
-                    this.workers[0].postMessage({
-                        Command: enums.Command.processKeyFrame,
-                        payload: payload,
-                        layerName: layerName
-                    });
-                }else{
-                    keyFrame.layer.timeline.addKeyframe(MathUtil.processKeyFrame(payload)); 
-                }
-            
-                if(partly){
-                    queue[0].lastProcessMark += this.processLimit;
-                }
-            }
-*/

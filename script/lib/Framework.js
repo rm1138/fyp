@@ -40,8 +40,7 @@ define([
         if(this.renderer === null){
             console.log("DOM Element not found");
             return undefined;    
-        }       
-        console.log("Framework Inited");
+        }
     };
 
     Framework.prototype = {

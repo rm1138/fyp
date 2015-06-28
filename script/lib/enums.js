@@ -17,7 +17,9 @@ define(function(){
                 Ready: "Timeline Worker Ready",
                 AddLayer: "Timeline Worker addlayer",
                 RemoveLayer: "Timeline Worker removelayer",
-                GetFrame: "Timeline Worker getframe"
+                GetFrameSet: "Timeline Worker get frame set",
+                NoFrame: "Timeline Worker no frame",
+                ResetLayer: "Timeline Worker resetlayer"
             }
         },
         Timeline:{

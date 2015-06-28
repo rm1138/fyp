@@ -105,6 +105,7 @@ define([
                     ctx.scale(1/animation.scaleX, 1/animation.scaleY);
                     ctx.rotate(MathUtil.radians(animation.orientation));
                     ctx.translate(-animation.x, -animation.y);
+                    model.__update(animation);
                     count--;
                 }
                 this.isDirty = true;

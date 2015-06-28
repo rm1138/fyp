@@ -11,30 +11,37 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
         var payload = e.data.payload;
         if(command === enums.Command.Worker.ProcessKeyFrame){
             var keyFrame = payload.keyFrame;
-            var start = payload.start;
-            var end = payload.end;
             var processLimit = payload.processLimit;
-            var order = payload.order;
-            for(var i=start; i<end; i+= processLimit){
-                var frames = MathUtil.processKeyFrame(keyFrame, i, i+processLimit, payload.step);
+            var batchOrder = payload.batchOrder;
+            var duration = payload.keyFrame.duration;
+            var totalWorker = payload.totalWorker;
+            var i = batchOrder
+            var myfunc = function(){
+
+                var end = (i+1)*processLimit > duration? duration : (i+1)*processLimit;
+                var frames = MathUtil.processKeyFrame(keyFrame, i*processLimit, end, payload.processStep);
                 var resultPayload = {
                     frames: frames,
                     layerName: keyFrame.layerName,
                     callBackId: keyFrame.callBackId,
-                    order: order++,
-                    start: i,
-                    end: i + processLimit,
-                    workerId: payload.workerId
+                    batchOrder: i
                 }
                 channelPort.postMessage({
                     command: command,
                     payload: resultPayload
                 });
-            }
+                i+= totalWorker;
+                if(i < duration / processLimit){
+                    setTimeout(myfunc, 10);
+                }
+            };
+            myfunc();
+            
             
         }else if(command === enums.Command.Worker.Init){
             channelPort = e.ports[0];
             channelPort.onmessage = getChannelMessage;
+            console.log("channel inited");
         }
     };
     self.postMessage({

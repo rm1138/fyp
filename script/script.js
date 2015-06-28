@@ -10,7 +10,6 @@ require(['lib/main'], function(Framework){
     var model = [];
     setTimeout(function(){
         layer = fw.createLayer("layer0");
-        
         for(var i=0; i<1; i++){
             model[i] = layer.addModel({
                 type: "image",
@@ -23,30 +22,28 @@ require(['lib/main'], function(Framework){
                 }
             });
         }
+        layer.play(); 
     }, 1000);
     
 
     
     container.addEventListener("click", function(){
-        setInterval(function(){
-            var mykeyframe = layer.createKeyframe(1000, function(){
-                console.log("my frame is completed");
+        var mykeyframe = layer.createKeyframe(20, function(){
+            console.log("my frame is completed");
+        });
+        var easing = "linear";
+        for(var i=0; i<1; i++){
+            mykeyframe.addAnimation(model[i], {
+                x: Math.random() * container.width,
+                y: Math.random() * container.height,
+                orientation: Math.random() * 360,
+                easing: easing, //easeInOutCubic
+                scaleX: Math.random() * 1.2,
+                scaleY: Math.random() * 1.2,
+                opacity: Math.random()
             });
-            var easing = "linear";
-            for(var i=0; i<1; i++){
-                mykeyframe.addAnimation(model[i], {
-                    x: Math.random() * container.width,
-                    y: Math.random() * container.height,
-                    orientation: Math.random() * 360,
-                    easing: easing, //easeInOutCubic
-                    scaleX: Math.random() * 1.2,
-                    scaleY: Math.random() * 1.2,
-                    opacity: Math.random()
-                });
-            }
-            mykeyframe.commit();
-            layer.play();   
-        }, 1000);
+        }
+        mykeyframe.commit();  
     }, false);
 });
 //
