@@ -7,6 +7,7 @@
 define(function(){
     var MathUtil = {};
     
+    MathUtil.ANIMATION_PROP_ARR = ['x', 'y', 'scaleX', 'scaleY', 'orientation', 'opacity'];
     MathUtil.step = 1000/60;
     MathUtil.EasingFunctions = {
         // no easing, no acceleration
@@ -37,20 +38,20 @@ define(function(){
         easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
     } 
     
-    MathUtil.valueProjection = function(animation, progress, frame){
+    MathUtil.valueProjection = function(animation, progress, result, arrPtr){
         var from = animation.from;
         var to = animation.to;
         var easing = MathUtil.EasingFunctions[animation.easing];
-        var keys = Object.keys(from);
+        var keys = MathUtil.ANIMATION_PROP_ARR;
         var i = keys.length;
-        frame.push(animation.modelName);
+
         while(i--) {
             var key = keys[i];
             if(from[key] !== to[key]) {
                 progress = easing(progress);
-                frame.push(from[key] * (1-progress) + to[key] * progress);
+                result[arrPtr.val++] = (from[key] * (1-progress) + to[key] * progress);
             }else{
-                 frame.push(from[key]);
+                result[arrPtr.val++] = (from[key]);
             }   
         }
     };
@@ -60,19 +61,16 @@ define(function(){
         var end = end;
         var step = MathUtil.step;
         var duration = keyFrame.duration;
-        var result = [];
+        var result = new Float32Array(keyFrame.animations.length * Math.ceil((end - start)/ MathUtil.step)*this.ANIMATION_PROP_ARR.length);
         var animations = keyFrame.animations;
+        var arrPtr = {val: 0};
         var i = 0;
         while(timeLapse <= end) {
-            var frame = [];
             for(var i=0, count = animations.length; i<count; i+=1) {
-                var animation = animations[i];
-                MathUtil.valueProjection(animation, timeLapse/duration, frame);
+                MathUtil.valueProjection(animations[i], timeLapse/duration, result, arrPtr);
             }
-            result = result.concat(frame);
             timeLapse += step;
         }
-        console.log(result);
         return result;      
     };
     

@@ -74,10 +74,7 @@ define([
         renderOnBuffer: function(layers) {
             var i = layers.length;
             while(i--){
-                var layer = layers[i];
-                this.aniamtionManager.getFrame(layer.name, function(frame){
-                   layer.__renderOnBuffer(frame); 
-                });
+                layers[i].__renderOnBuffer();
             }         
         },
         renderFrameCount: function(){

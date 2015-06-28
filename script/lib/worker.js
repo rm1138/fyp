@@ -2,10 +2,7 @@ importScripts("../external/require.js");
 var functionContainer = {};
 
 require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, imgUtil, MathUtil){
-    var channelPort;
-    var getChannelMessage = function(e) {
-        console.log(e);
-    };
+
     onmessage = function(e){
         var command = e.data.command;
         var payload = e.data.payload;
@@ -19,6 +16,8 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
             var myfunc = function(){
 
                 var end = (i+1)*processLimit > duration? duration : (i+1)*processLimit;
+                if(end === i*processLimit)
+                    return;
                 var frames = MathUtil.processKeyFrame(keyFrame, i*processLimit, end, payload.processStep);
                 var resultPayload = {
                     frames: frames,
@@ -26,22 +25,19 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
                     callBackId: keyFrame.callBackId,
                     batchOrder: i
                 }
-                channelPort.postMessage({
+                self.postMessage({
                     command: command,
                     payload: resultPayload
-                });
+                }, [frames.buffer]);
                 i+= totalWorker;
                 if(i < duration / processLimit){
-                    setTimeout(myfunc, 10);
+                    setTimeout(myfunc, 100);
                 }
             };
             myfunc();
             
-            
         }else if(command === enums.Command.Worker.Init){
-            channelPort = e.ports[0];
-            channelPort.onmessage = getChannelMessage;
-            console.log("channel inited");
+            console.log("Worker inited");
         }
     };
     self.postMessage({

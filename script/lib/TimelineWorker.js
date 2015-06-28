@@ -5,6 +5,7 @@ require(["enums", "class/Timeline", "MathUtil"], function(enums, Timeline, MathU
     var channelPorts = [];
     var requestQueue = [];
     var getChannelMessage = function(e) {
+        console.log(e);
         var command = e.data.command;
         var payload = e.data.payload;
         var that = this;

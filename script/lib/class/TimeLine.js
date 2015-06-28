@@ -1,4 +1,4 @@
-define(['enums'], function (enums){
+define(['lib/enums'], function (enums){
     
     var Timeline = Timeline || function(){
         this.frames = [];
