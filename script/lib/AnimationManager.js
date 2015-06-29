@@ -5,7 +5,7 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
             return AnimationManager.instance;    
         }
         this.step = MathUtil.step;                //process frame step
-        this.batchSize = 200;
+        this.batchSize = 100;
         this.supportWorker = false;
         this.layers = {};
         if(window.Worker){
@@ -26,19 +26,23 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
 
             var that = this;
             if(command === enums.Command.Worker.ProcessKeyFrame){
-                this.layers[payload.layerName].frames[payload.batchOrder] = payload.frames;
+                this.layers[payload.layerName].addFrames(payload.batchOrder, payload.frames, payload.queueID);
+                e.target.postMessage({
+                    command: enums.Command.Worker.Continue
+                });
             }else if(command === enums.Command.Worker.Ready) {
                 e.target.postMessage({
                     command: enums.Command.Worker.Init,
                     payload: {}
-                });    
+                });
+                this.updateWorker();
             }
         },
         initWorker: function(){
             var that = this;
             var i = this.numOfThread ;
             while(i--){
-                var worker = new Worker("script/lib/Worker.js");
+                var worker = new Worker("script/lib/AnimationWorker.js");
                 worker.onmessage = function(e){
                     that.onWorkerReturn(e);
                 };
@@ -56,7 +60,8 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
             return result;
         },
         processKeyFrame: function(keyFrame) {
-            this.layers[keyFrame.layerName].clear();
+            var queueID = MathUtil.genRandomId();
+            this.layers[keyFrame.layerName].reset(queueID);
             var command = enums.Command.Worker.ProcessKeyFrame;
             var workers = this.workers;
             var processStep = this.step;
@@ -65,7 +70,8 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
                 processLimit: this.batchSize,
                 processStep: processStep,
                 batchOrder: 0,
-                totalWorker: workers.length
+                totalWorker: workers.length,
+                queueID: queueID
             };
             var i = workers.length;
             while(i--){
@@ -79,6 +85,20 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
         },
         throttling: function(){
             
+        },
+        updateWorker: function(){
+            var command = enums.Command.Worker.UpdateInfo;
+            var payload = {
+                step: this.step,
+                batchSize: this.batchSize
+            }
+            var i = this.workers.length;
+            while(i--){
+                this.workers[i].postMessage({
+                    command: command, 
+                    payload: payload
+                });
+            }           
         }
     }
     

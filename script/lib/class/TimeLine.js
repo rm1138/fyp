@@ -3,20 +3,25 @@ define(['lib/enums'], function (enums){
     var Timeline = Timeline || function(){
         this.frames = [];
         this.playingFrameSetIndex = 0;
+        this.queueID = null;
     };
 
     Timeline.prototype = {
         getNextFrameSet: function() {
             if(this.frames[this.playingFrameSetIndex]) {
-                var result = this.frames[this.playingFrameSetIndex];
-                this.playingFrameSetIndex += 1;
-                return result;
+                return this.frames[this.playingFrameSetIndex++];
             }
             return null;
         },
-        clear: function(){
+        reset: function(queueID){
+            this.queueID = queueID;
             this.frames = [];
             this.playingFrameSetIndex = 0;
+        },
+        addFrames: function(index, frame, queueID){
+            if(this.queueID === queueID){
+                this.frames[index] = frame;
+            }
         }
     };
     return Timeline;
