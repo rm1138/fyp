@@ -19,6 +19,7 @@ define(['lib/MathUtil'], function(MathUtil){
         //pre-format the easing function
         this.easing = MathUtil.EasingFunctions[animation.easing]?animation.easing:"linear";
         this.modelName = model.name;
+        this.duration = animation.duration;
     }
     
     return Animation;

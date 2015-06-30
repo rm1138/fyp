@@ -25,23 +25,21 @@ require(['lib/main'], function(Framework){
     layer.play(); 
 
     setInterval(function(){
-        var mykeyframe = layer.createKeyframe(100, function(){
-            console.log("my frame is completed");
-        });
         var easing = "linear";
         for(var i=0; i<10; i++){
-            mykeyframe.addAnimation(model[Math.floor(Math.random() * 100)], {
+            model[Math.floor(Math.random() * 99)].addAnimation({
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
                 orientation: Math.random() * 360,
                 easing: easing, //easeInOutCubic
                 scaleX: Math.random() * 1.2,
                 scaleY: Math.random() * 1.2,
-                opacity: Math.random()
+                opacity: Math.random(),
+                duration: 1000
             });
         }
-        mykeyframe.commit();  
-    }, 100);
+        console.log("added animation")
+    }, 1000);
 
     var started = true;
     container.addEventListener("click", function(){

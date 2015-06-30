@@ -23,7 +23,6 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil){
                 if(this.playingFrameSet){
                     return this.getAnimations(modelCount, step);
                 }else{
-                    console.log("no animation");
                     return null;
                 }
             }   

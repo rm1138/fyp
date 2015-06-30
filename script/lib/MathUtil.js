@@ -74,6 +74,26 @@ define(function(){
         return result;      
     };
     
+    MathUtil.parseAnimation = function(animation, batchSize) {
+        var result = [],
+            duration = animation,
+            start = 0,
+            end = (duration > batchSize)? batchSize: duration,
+            keys = MathUtil.ANIMATION_PROP_ARR,
+            i,
+            temp;
+                   
+        while(end <= duration){
+            temp = {};
+            i = keys.length;
+            while(i--){
+                temp[keys[i] = MathUtil.valueProjection
+                
+            }
+            
+        }
+    }
+    
     MathUtil.radians = function(degrees) {
         return degrees * Math.PI / 180;
     };

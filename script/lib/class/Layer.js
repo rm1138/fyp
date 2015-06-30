@@ -70,11 +70,6 @@ define([
             var canvas = this.canvas;
             canvas.parentNode.removeChild(canvas);
         },
-        createKeyframe: function(duration, callBack){
-            var callBackId = MathUtil.genRandomId();
-            this.callBackMapping[callBackId] = callBack;
-            return new KeyFrame(duration, callBackId, this.name);
-        },
         play: function(){
             this.state = enums.LayerState.playing;
             console.log("started");
@@ -85,6 +80,24 @@ define([
         },
         getTimeline: function(){
             return this.timeline;    
+        },
+        getLayerAnimation: function() {
+            var result = {},
+                models = this.zIndexModelMapping,
+                i = models.length,
+                count = 0;
+            while(i--){
+                var modelAnimation = models[i].getModelAnimation();
+                if(modelAnimation !== null){
+                    result[models[i].name] = modelAnimation;
+                    count+=1;
+                }
+            }
+            return {
+                layerName: this.name,
+                layerAnimations: result,
+                layerAnimationsCount: count
+            };
         },
         __renderOnBuffer: function(){
             var animations = this.timeline.getAnimations(this.modelCount, this.animationManager.step);

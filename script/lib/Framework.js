@@ -91,6 +91,7 @@ define([
                     that.__ticking();
                 });
                 this.renderer.render(this.layers);
+                this.animationManager.processAnimations(this.layers);
             }
         },
         getAnimationManager: function(){

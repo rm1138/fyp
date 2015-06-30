@@ -49,6 +49,20 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
                 this.workers.push(worker);
             }
         },
+        processAnimations: function(layers){
+            var i = layers.length,
+                animations,
+                layer;
+            while(i--){
+                layer = layers[i];
+                animations = layer.getLayerAnimation();
+                if(animations.layerAnimationsCount > 0){
+                    
+                    
+                    console.log(animation
+                }
+            }
+        },
         processKeyFrame: function(keyFrame) {
             var queueID = MathUtil.genRandomId();
             this.fw.getLayer(keyFrame.layerName).getTimeline().reset(queueID);

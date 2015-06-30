@@ -1,5 +1,5 @@
-define(["lib/Global", "lib/enums"],
-    function(Global, enums){
+define(["lib/Global", "lib/enums", "class/Animation"],
+    function(Global, enums, Animation){
         var Model = Model || function(obj){
             Global.modelCount += 1;
             var that = this;
@@ -28,6 +28,7 @@ define(["lib/Global", "lib/enums"],
             this.opacity = 1.0;
             this.scaleX  = 1.0;
             this.scaleY  = 1.0;
+            this.animations = [];
         };
     
         Model.prototype = {
@@ -38,6 +39,19 @@ define(["lib/Global", "lib/enums"],
                 this.opacity = obj.opacity;
                 this.scaleX  = obj.scaleX;
                 this.scaleY  = obj.scaleY;
+            },
+            addAnimation: function(options){
+                var animation = new Animation(this, options);
+                this.animations.push(animation);
+            },
+            getModelAnimation: function(){
+                var result = this.animations;
+                if(result.length > 0){
+                    this.animations = [];
+                    return result;
+                }else{
+                    return null;    
+                }
             },
             rasterize: function(img){
                 var tempCanvas = document.createElement("canvas");
