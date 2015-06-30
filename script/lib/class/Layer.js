@@ -3,13 +3,14 @@ define([
         'class/Model',
         'lib/enums',
         'lib/MathUtil',
-        'lib/AnimationManager'
-    ], function (KeyFrame, Model, enums, MathUtil, AnimationManager){
+        'class/Timeline'
+    ], function (KeyFrame, Model, enums, MathUtil, Timeline){
     
-    var Layer = Layer || function(name, zIndex){
+    var Layer = Layer || function(name, zIndex, fw){
+        this.fw = fw;
+        this.animationManager = fw.getAnimationManager();
         this.name = name;
         this.modelCount = 0;
-        this.animationManager = new AnimationManager();
         this.zIndexModelMapping = [];
         this.nameModelMapping = {};
 
@@ -19,16 +20,15 @@ define([
         this.height = 0;
         this.ctx = null;
         this.bufferCtx = null;
-     
+        
         this.zIndex = 0;
         if(zIndex){
             this.canvas.style.zIndex = zIndex;
             this.zIndex = zIndex;
         }
         
+        this.timeline = new Timeline();
         this.callBackMapping = {};
-        this.frameSetStartTime = 0;
-        this.playingFrameSet = undefined;
         this.isDirty = false;
         this.state = enums.LayerState.stopped;
     }
@@ -83,36 +83,22 @@ define([
             this.state = enums.LayerState.stopped;
             console.log("stopped");
         },
+        getTimeline: function(){
+            return this.timeline;    
+        },
         __renderOnBuffer: function(){
-            var frame = this.playingFrameSet;
-            if(!frame){
-                this.playingFrameSet = this.animationManager.getFrame(this.name);
-                this.frameSetStartTime = new Date().getTime();
-                frame = this.playingFrameSet;
-            }
-            if(this.state === enums.LayerState.playing && frame){
-                var frameCount = Math.round((new Date().getTime() - this.frameSetStartTime) / this.animationManager.step);
-                var frameIndex = this.modelCount * MathUtil.ANIMATION_PROP_ARR.length * frameCount;
-                var shiftIndex = frameIndex+this.modelCount*MathUtil.ANIMATION_PROP_ARR.length;
-                if(shiftIndex >= frame.length){
-                    this.playingFrameSet = false;
-                    return this.__renderOnBuffer();
-                }
+            var animations = this.timeline.getAnimations(this.modelCount, this.animationManager.step);
+            if(this.state === enums.LayerState.playing && animations !== null){
+
                 var renderModels = this.zIndexModelMapping;
                 var count = renderModels.length - 1;
                 var ctx = this.bufferCtx;
                 var model;
                 ctx.clearRect(0, 0, this.width, this.height);  
                 while(model = renderModels[count]){
-                    var animation = {};
+                    var animation = animations[count];
 
-                    var keys = MathUtil.ANIMATION_PROP_ARR;
-                    var i = keys.length;
-                    shiftIndex = frameIndex+count*MathUtil.ANIMATION_PROP_ARR.length;
-                    while(i--) {
-                        animation[keys[5-i]] = frame[shiftIndex+i];
-                    }
-
+                    
                     ctx.globalAlpha = animation.opacity;
                     ctx.translate(animation.x, animation.y);
                     ctx.rotate(-MathUtil.radians(animation.orientation));

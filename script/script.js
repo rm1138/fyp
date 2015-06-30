@@ -8,58 +8,48 @@ require(['lib/main'], function(Framework){
 
     var layer;
     var model = [];
-    setTimeout(function(){
-        layer = fw.createLayer("layer0");
-        for(var i=0; i<100; i++){
-            model[i] = layer.addModel({
-                type: "image",
+
+    layer = fw.createLayer("layer0");
+    for(var i=0; i<100; i++){
+        model[i] = layer.addModel({
+            type: "image",
+            x: Math.random() * container.width,
+            y: Math.random() * container.height,
+            url: "img/sensei.png",
+            name: "model" + i,
+            onCollision: function(){
+                console.log("model" + i + " hit other object");    
+            }
+        });
+    }
+    layer.play(); 
+
+    setInterval(function(){
+        var mykeyframe = layer.createKeyframe(100, function(){
+            console.log("my frame is completed");
+        });
+        var easing = "linear";
+        for(var i=0; i<10; i++){
+            mykeyframe.addAnimation(model[Math.floor(Math.random() * 100)], {
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
-                url: "img/sensei.png",
-                name: "model" + i,
-                onCollision: function(){
-                    console.log("model" + i + " hit other object");    
-                }
+                orientation: Math.random() * 360,
+                easing: easing, //easeInOutCubic
+                scaleX: Math.random() * 1.2,
+                scaleY: Math.random() * 1.2,
+                opacity: Math.random()
             });
         }
-        layer.play(); 
-    }, 1000);
-    
+        mykeyframe.commit();  
+    }, 100);
 
-    
+    var started = true;
     container.addEventListener("click", function(){
-        setInterval(function(){
-            var mykeyframe = layer.createKeyframe(10000, function(){
-                console.log("my frame is completed");
-            });
-            var easing = "linear";
-            for(var i=0; i<100; i++){
-                mykeyframe.addAnimation(model[i], {
-                    x: Math.random() * container.width,
-                    y: Math.random() * container.height,
-                    orientation: Math.random() * 360,
-                    easing: easing, //easeInOutCubic
-                    scaleX: Math.random() * 1.2,
-                    scaleY: Math.random() * 1.2,
-                    opacity: Math.random()
-                });
-            }
-            mykeyframe.commit();  
-        }, 1000);
+        if(started){
+            layer.stop(); 
+        }else {
+            layer.play(); 
+        }
+        started = !started;
     }, false);
 });
-//
-//        var easing = easingArr[Math.floor((Math.random() * 13))];
-//
-//        mykeyframe.addAnimation(model, {
-//            x: Math.random() * container.width,
-//            y: Math.random() * container.height,
-//            orientation: Math.random() * 360,
-//            easing: easing, //easeInOutCubic
-//            scaleX: Math.random() * 1.2,
-//            scaleY: Math.random() * 1.2,
-//            opacity: Math.random(),
-//            callback: function(){
-//                console.log("Key frame completed");
-//            }
-//        });

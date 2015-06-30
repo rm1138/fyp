@@ -1,13 +1,13 @@
-define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil, Timeline) {
-    var AnimationManager = AnimationManager || function () {
+define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
+    var AnimationManager = AnimationManager || function (fw) {
         //throttling
         if(AnimationManager.instance) {
             return AnimationManager.instance;    
         }
+        this.fw = fw;
         this.step = MathUtil.step;                //process frame step
-        this.batchSize = 100;
+        this.batchSize = 1000;
         this.supportWorker = false;
-        this.layers = {};
         if(window.Worker){
             this.numOfThread = 3;//navigator.hardwareConcurrency || 4;
             this.workers = [];
@@ -26,7 +26,7 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
 
             var that = this;
             if(command === enums.Command.Worker.ProcessKeyFrame){
-                this.layers[payload.layerName].addFrames(payload.batchOrder, payload.frames, payload.queueID);
+                this.fw.getLayer(payload.layerName).getTimeline().addFrames(payload.batchOrder, payload.frames, payload.queueID);
                 e.target.postMessage({
                     command: enums.Command.Worker.Continue
                 });
@@ -49,19 +49,9 @@ define(['lib/enums', 'lib/MathUtil', 'class/Timeline'], function(enums, MathUtil
                 this.workers.push(worker);
             }
         },
-        addLayer: function(layerName) {
-            this.layers[layerName] = new Timeline();
-        },
-        removeLayer: function(layName) {
-            delete this.layers[layerName];
-        },
-        getFrame: function(layerName) {
-            var result  = this.layers[layerName].frames.shift();
-            return result;
-        },
         processKeyFrame: function(keyFrame) {
             var queueID = MathUtil.genRandomId();
-            this.layers[keyFrame.layerName].reset(queueID);
+            this.fw.getLayer(keyFrame.layerName).getTimeline().reset(queueID);
             var command = enums.Command.Worker.ProcessKeyFrame;
             var workers = this.workers;
             var processStep = this.step;

@@ -34,9 +34,9 @@ define([
     var Framework = Framework || function (canvasDomID, readyCall) {
         this.running = false;
         this.requestId = 0;
-        this.renderer = new Renderer(canvasDomID);
+        this.renderer = new Renderer(canvasDomID, this);
         this.layers = [];
-        this.animationManager = new AnimationManager();
+        this.animationManager = new AnimationManager(this);
         if(this.renderer === null){
             console.log("DOM Element not found");
             return undefined;    
@@ -45,10 +45,9 @@ define([
 
     Framework.prototype = {
         createLayer: function(name, zIndex){
-            var layer = new Layer(name, zIndex);
+            var layer = new Layer(name, zIndex, this);
             this.layers.push(layer);
             this.renderer.initLayer(layer);
-            this.animationManager.addLayer(name);
             return layer;
         },
         deleteLayer: function(name){
@@ -58,7 +57,6 @@ define([
                 var index = layers.indexOf(layer);  
                 layer.__delete();
                 layers.splice(index, 1);
-                this.animationManager.removeLayer(name);
                 return true;
             }
             return false;
@@ -94,6 +92,12 @@ define([
                 });
                 this.renderer.render(this.layers);
             }
+        },
+        getAnimationManager: function(){
+            return this.animationManager;    
+        },
+        getRenderer: function(){
+            return this.renderer;    
         }
     };  
     return Framework;

@@ -8,7 +8,6 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
     var batchSize = 0;
     
     var processKeyFrame = function() {
-
         var keyFrame = currentJob.keyFrame;
         var batchOrder = currentJob.batchOrder;
         var duration = currentJob.keyFrame.duration;
@@ -36,8 +35,7 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
         }, [frames.buffer]);
         currentJob.batchOrder += totalWorker;     
     }
-        
-        
+            
     onmessage = function(e){
         var command = e.data.command;
         var payload = e.data.payload;
@@ -59,39 +57,3 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
         payload: {}
     });
 });
-/*
-
-var ans = functionContainer["myFunct"]("abc");
-console.log(ans);
-
-    onmessage = function(e){
-        var command = e.data.command;
-        var payload = e.data.payload;
-        if(command === enums.command.updateObject){
-            var ans = functionContainer["myFunct"]("pobb");
-            console.log(ans);
-        }else if(command === enums.command.init){
-            console.info("Worker is inited");
-        }else if(command === enums.command.injectFunction){
-            var url = URL.createObjectURL(payload);
-            importScripts(url);
-        }
-    };
-    
-//*/
-//        onWorkerReturn: function(e){
-//            
-//            var command = e.data.command;
-//            var payload = e.data.payload;
-//            var that = this;
-//            if(command === enums.command.processKeyFrame){
-//                var layerName = e.data.layerName;
-//                var layer = that.layerLookup[layerName];
-//                layer.timeline.addKeyframe(payload);
-//                this.workerReturnCount += 1;
-//                console.log("worker returned");
-//            } else if(command === enums.command.ready) {
-//                that.readyWorker += 1;
-//                e.target.postMessage({command: enums.command.init, payload: {}});    
-//            }
-//        }

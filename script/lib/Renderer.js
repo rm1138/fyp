@@ -3,22 +3,21 @@
     Response for rendering 
 */
 define([
-        'lib/enums',
-        'lib/AnimationManager'
-    ], function(enums, AnimationManager){
+        'lib/enums'
+    ], function(enums){
     
     //Renderer, the only connecton to the DOM Canvas Element
-    var Renderer = Renderer || function(canvasDomID){
+    var Renderer = Renderer || function(canvasDomID, fw){
         this.container = document.getElementById(canvasDomID);
         this.container.style.position = "relative";
         if(this.container === null){
             console.info("DOM Element not found");
             return null;   
         }
+        this.fw = fw;
         this.width = this.container.width;
         this.height = this.container.height;
-        
-        this.aniamtionManager = new AnimationManager();
+
         //for render the fps
         this.fpsCanvas = document.createElement("canvas");
         this.fpsCanvas.width = this.container.width;
@@ -29,16 +28,12 @@ define([
         this.fpsCanvas.style.zIndex = "100";
         this.fpsCtx = this.fpsCanvas.getContext("2d");
         this.container.appendChild(this.fpsCanvas);
-        this.renderFrameCount()
         this.lastDrawTime = new Date().getTime();
-        this.delta = 0;
+        this.delta = [];
     };
     
     Renderer.prototype = {
         initLayer: function(renderLayer) {
-            /*
-                this.workerManager.addWorkerLayer(renderLayer);
-            */
             var canvas = renderLayer.canvas;
             canvas.id = renderLayer.name;
             canvas.width = this.width;
@@ -57,19 +52,22 @@ define([
         },
 
         render: function(layers){
-            this.renderOnCanvas(layers);
-            this.renderOnBuffer(layers);
-        },
-        renderOnCanvas: function(layers) {
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
-            
+            this.renderOnCanvas(layers);
+            this.renderOnBuffer(layers);
+            this.delta.push(delta); 
+            if(this.delta.length > 100){
+                this.delta.shift();    
+            }
+        },
+        renderOnCanvas: function(layers) {
             var i = layers.length;
             while(i--){
                 layers[i].__render();
             }
-            this.delta = delta; 
+            this.renderFrameCount();
         },
         renderOnBuffer: function(layers) {
             var i = layers.length;
@@ -78,18 +76,23 @@ define([
             }         
         },
         renderFrameCount: function(){
-            var fps = Math.floor(1000/this.delta);
+            var average,
+                sum = 0,
+                deltaArr = this.delta,
+                i = deltaArr.length;
+            while(i--){
+                sum += deltaArr[i];
+            }
+            average = sum / deltaArr.length;
+            var fps = Math.floor(1000/average);
             var ctx = this.fpsCtx;
             ctx.clearRect(5, 5, 200, 35);
             ctx.beginPath();
             ctx.fillStyle = "#FF0000";
             ctx.font = "30px Arial";
-            ctx.fillText("FPS: " + fps,  10, 30);
+            ctx.fillText("Avg FPS: " + fps,  10, 30);
             ctx.closePath();
             var that = this;
-            setTimeout(function(){
-                that.renderFrameCount();
-            }, 1000);
         }
     };
     
