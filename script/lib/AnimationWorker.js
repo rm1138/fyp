@@ -2,10 +2,6 @@ importScripts("../external/require.js");
 var functionContainer = {};
 
 require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, imgUtil, MathUtil){
-
-    var currentJob = null;
-    var step = MathUtil.step;
-    var batchSize = 0;
     
     var processKeyFrame = function() {
         var keyFrame = currentJob.keyFrame;
@@ -16,6 +12,11 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
 
         var end = (batchOrder+1)*batchSize > duration? duration : (batchOrder+1)*batchSize;
         if(batchOrder >= duration / batchSize || end === batchOrder*batchSize){
+            self.postMessage({
+                command: enums.Command.Worker.FinishJob,
+                payload: {},
+                workerId: workerId
+            });
             return;
         }
 
@@ -31,24 +32,31 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
 
         self.postMessage({
             command: enums.Command.Worker.ProcessKeyFrame,
-            payload: resultPayload
+            payload: resultPayload,
+            workerId: workerId
         }, [frames.buffer]);
         currentJob.batchOrder += totalWorker;     
     }
+
             
     onmessage = function(e){
         var command = e.data.command;
         var payload = e.data.payload;
         
-        if(command === enums.Command.Worker.Continue){
-            processKeyFrame();
-        }else if(command === enums.Command.Worker.UpdateInfo){
-            step = payload.step;
-            batchSize = payload.batchSize;
-        }else if(command === enums.Command.Worker.ProcessKeyFrame){
-            currentJob = payload;
-            processKeyFrame();
+        if(command === enums.Command.Worker.ProcessAnimations){
+            var temp = MathUtil.processAnimations(payload.animations, payload.modelNamesMap, payload.step, payload.batchSize);
+            var result = {
+                frameId: payload.frameId,
+                frames: temp.frames,
+                nameMap: temp.nameMap
+            };
+            
+            self.postMessage({
+                command: command,
+                payload: result,
+            }, [result.frames.buffer]);
         }else if(command === enums.Command.Worker.Init){
+            workerId = e.data.workerId;
             console.log("Worker inited");
         }
     };

@@ -1,46 +1,79 @@
 define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
     var AnimationManager = AnimationManager || function (fw) {
-        //throttling
-        if(AnimationManager.instance) {
-            return AnimationManager.instance;    
-        }
         this.fw = fw;
+        this.models = {};
+        this.modelCount = 0;
         this.step = MathUtil.step;                //process frame step
-        this.batchSize = 1000;
+        this.batchSize = 200;
+        this.framesQueue = [];
         this.supportWorker = false;
+        this.loopId = 0;
+        this.framesCache = {};
+        this.nameFramesMapCache = {};
         if(window.Worker){
-            this.numOfThread = 3;//navigator.hardwareConcurrency || 4;
-            this.workers = [];
-            this.initWorker();
             this.supportWorker = true;
-            this.readyWorker = 0;
+            this.numOfThread = navigator.hardwareConcurrency || 4;
+            this.workers = [];
+            this.initWorker();  
         }
-        AnimationManager.instance = this;
-        return this;
     };
     
     AnimationManager.prototype = {
+        start: function(){
+            var that = this;
+            this.processAnimation();
+            this.loopId = setInterval(function(){
+                that.processAnimation();
+            }, this.batchSize/2);
+        },
+        pause: function(){
+            clearInterval(this.loopId);    
+        },
+        addModel: function(model){
+            this.models[model.name] = model;  
+            this.modelCount++;
+        },
+        removeModel: function(modelName){
+            delete this.models[modelName];  
+            this.modelCount--;
+        },
+        getModel: function(modelName){
+            return this.models[modelName];    
+        },
         onWorkerReturn: function(e){
             var command = e.data.command;
             var payload = e.data.payload;
 
             var that = this;
-            if(command === enums.Command.Worker.ProcessKeyFrame){
-                this.fw.getLayer(payload.layerName).getTimeline().addFrames(payload.batchOrder, payload.frames, payload.queueID);
-                e.target.postMessage({
-                    command: enums.Command.Worker.Continue
-                });
+            if(command === enums.Command.Worker.ProcessAnimations){
+                this.nameFramesMapCache[payload.frameId].push(payload.nameMap);
+                this.framesCache[payload.frameId].push(payload.frames);
+                if(this.nameFramesMapCache[payload.frameId].length === this.workers.length){
+                    var framesCache = this.framesCache[payload.frameId];
+                    var nameFramesMapCache = this.nameFramesMapCache[payload.frameId];
+                    var models = this.models;
+                    delete this.framesCache[payload.frameId];
+                    delete this.nameFramesMapCache[payload.frameId];
+                    var nameMap = {};
+
+                    for(var i=0, length=this.workers.length; i<length; i++){
+                        var temp = nameFramesMapCache[i];
+                        while(temp.length > 0){
+                            var mapping = temp.shift();
+                            models[mapping.name].framesQueue.push(framesCache[i].subarray(mapping.startIndex, mapping.endIndex));
+                        }
+                    }
+                }
             }else if(command === enums.Command.Worker.Ready) {
                 e.target.postMessage({
                     command: enums.Command.Worker.Init,
                     payload: {}
                 });
-                this.updateWorker();
             }
         },
         initWorker: function(){
             var that = this;
-            var i = this.numOfThread ;
+            var i = this.numOfThread;
             while(i--){
                 var worker = new Worker("script/lib/AnimationWorker.js");
                 worker.onmessage = function(e){
@@ -49,60 +82,58 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
                 this.workers.push(worker);
             }
         },
-        processAnimations: function(layers){
-            var i = layers.length,
-                animations,
-                layer;
-            while(i--){
-                layer = layers[i];
-                animations = layer.getLayerAnimation();
-                if(animations.layerAnimationsCount > 0){
-                    
-                    
-                    console.log(animation
+        processAnimation: function() {
+            if(this.modelCount === 0){
+                return;    
+            }
+            var models = this.models;
+            var modelNames = Object.keys(models);
+            var modelNamesMap = [];
+            var batchSize = this.batchSize;
+            var animations = [];
+            
+            var i = modelNames.length;
+            while(i--) {
+                var modelName = modelNames[i];
+                var model = models[modelName];
+                var animation = model.getModelAnimation(batchSize);
+                if(animation !== null){
+                    animations.push(animation);
+                    modelNamesMap.push(modelName);
                 }
             }
+            if(modelNamesMap.length > 0){
+                this.processAnimationInWorker(modelNamesMap, animations);
+            }
         },
-        processKeyFrame: function(keyFrame) {
-            var queueID = MathUtil.genRandomId();
-            this.fw.getLayer(keyFrame.layerName).getTimeline().reset(queueID);
-            var command = enums.Command.Worker.ProcessKeyFrame;
+        processAnimationInWorker: function(modelNamesMap, animations){
+            var command = enums.Command.Worker.ProcessAnimations;
             var workers = this.workers;
-            var processStep = this.step;
-            var payload = {    
-                keyFrame: keyFrame,
-                processLimit: this.batchSize,
-                processStep: processStep,
-                batchOrder: 0,
-                totalWorker: workers.length,
-                queueID: queueID
-            };
-            var i = workers.length;
+            var animationPerWorker = animations.length / workers.length;
+            var step = this.step;
+            var batchSize = this.batchSize;
+            var frameId = MathUtil.genRandomId();
+            var i = this.workers.length;
+            
+            this.framesCache[frameId] = [];
+            this.nameFramesMapCache[frameId] = [];
+            
             while(i--){
-                this.workers[i].postMessage({
-                    command: command, 
+                var payload = {
+                    modelNamesMap: modelNamesMap.slice(i*animationPerWorker, (i+1)*animationPerWorker),
+                    animations: animations.slice(i*animationPerWorker, (i+1)*animationPerWorker),
+                    step: step,
+                    frameId: frameId,
+                    batchSize: batchSize
+                };
+                workers[i].postMessage({
+                    command: command,
                     payload: payload
                 });
-                payload.batchOrder++;
             }
-
         },
         throttling: function(){
             
-        },
-        updateWorker: function(){
-            var command = enums.Command.Worker.UpdateInfo;
-            var payload = {
-                step: this.step,
-                batchSize: this.batchSize
-            }
-            var i = this.workers.length;
-            while(i--){
-                this.workers[i].postMessage({
-                    command: command, 
-                    payload: payload
-                });
-            }           
         }
     }
     

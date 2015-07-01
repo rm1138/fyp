@@ -38,7 +38,7 @@ define(function(){
         easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
     } 
     
-    MathUtil.valueProjection = function(animation, progress, result, arrPtr){
+    MathUtil.processAnimation = function(animation, progress, result, ptr){
         var from = animation.from;
         var to = animation.to;
         var easing = MathUtil.EasingFunctions[animation.easing];
@@ -48,51 +48,58 @@ define(function(){
         while(i--) {
             var key = keys[i];
             if(from[key] !== to[key]) {
-                progress = easing(progress);
-                result[arrPtr.val++] = (from[key] * (1-progress) + to[key] * progress);
+                result[ptr.val++] = MathUtil.valueProjection(from[key], to[key], progress, easing);
             }else{
-                result[arrPtr.val++] = (from[key]);
-            }   
+                result[ptr.val++] = (from[key]);
+            } 
         }
     };
     
-    MathUtil.processKeyFrame = function(keyFrame, start, end, step){
-        var timeLapse = start + (step - (start % step));
-        var end = end;
-        var step = MathUtil.step;
-        var duration = keyFrame.duration;
-        var result = new Float32Array(keyFrame.animations.length * Math.ceil((end - start)/ MathUtil.step)*this.ANIMATION_PROP_ARR.length);
-        var animations = keyFrame.animations;
-        var arrPtr = {val: 0};
-        var i = 0;
-        while(timeLapse <= end) {
-            for(var i=0, count = animations.length; i<count; i+=1) {
-                MathUtil.valueProjection(animations[i], timeLapse/duration, result, arrPtr);
-            }
-            timeLapse += step;
+    MathUtil.valueProjection = function(from, to, progress, easing){
+        if(typeof easing === "function"){
+            progress = easing(progress);
         }
-        return result;      
+        return from * (1-progress) + to * progress;
     };
     
-    MathUtil.parseAnimation = function(animation, batchSize) {
-        var result = [],
-            duration = animation,
-            start = 0,
-            end = (duration > batchSize)? batchSize: duration,
-            keys = MathUtil.ANIMATION_PROP_ARR,
-            i,
-            temp;
-                   
-        while(end <= duration){
-            temp = {};
-            i = keys.length;
-            while(i--){
-                temp[keys[i] = MathUtil.valueProjection
-                
-            }
-            
+    MathUtil.processAnimations = function(animations, nameMap, step, batchSize){
+        var i = animations.length;
+        var totalFramesCount = 0;
+        while(i--){
+            totalFramesCount += animations[i].end - animations[i].start;
         }
-    }
+        var frameSize = Math.ceil(totalFramesCount / step) * this.ANIMATION_PROP_ARR.length;
+        var result = new Float32Array(frameSize);
+        var step = step;
+        var resultNameMap = [];
+        var ptr = {
+            val: 0
+        };
+        for(var i=0, count=animations.length; i<count; i+=1){ 
+            var animation = animations[i];    
+            var start = animation.start;
+            var timeLapse = start;
+            var end = animation.end;
+            var duration = animation.duration;
+            var mapping = {
+                name: nameMap[i], 
+                startIndex: ptr.val, 
+                endIndex: null
+            };
+   
+            //generate frame
+            while(timeLapse <= end) {
+                MathUtil.processAnimation(animation, timeLapse/duration, result, ptr);
+                timeLapse += step;
+            } 
+            mapping.endIndex = ptr.val;
+            resultNameMap.push(mapping);
+        }
+        return {
+            nameMap: resultNameMap,
+            frames: result
+        };      
+    };
     
     MathUtil.radians = function(degrees) {
         return degrees * Math.PI / 180;

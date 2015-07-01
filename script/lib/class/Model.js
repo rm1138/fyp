@@ -1,7 +1,7 @@
-define(["lib/Global", "lib/enums", "class/Animation"],
-    function(Global, enums, Animation){
+define(["lib/enums", "class/Animation", "lib/MathUtil"],
+    function(enums, Animation, MathUtil){
         var Model = Model || function(obj){
-            Global.modelCount += 1;
+
             var that = this;
             if(obj.type === "image") {
                 this.type = enums.ModelType.Image;
@@ -11,7 +11,6 @@ define(["lib/Global", "lib/enums", "class/Animation"],
                     that.img = this;//that.rasterize(this);    
                     that.width = this.width;
                     that.height = this.height;
-                    Global.readyModelCount += 1;
                 };
             }else if(obj.type === "canvasObject"){
                 this.img = document.createElement("canvas");
@@ -28,30 +27,73 @@ define(["lib/Global", "lib/enums", "class/Animation"],
             this.opacity = 1.0;
             this.scaleX  = 1.0;
             this.scaleY  = 1.0;
-            this.animations = [];
+            this.animationQueue = [];
+            this.currentFrame = null;
+            this.frameStartTime = 0;
+            this.framesQueue = [];
         };
     
         Model.prototype = {
-            __update: function(obj){
-                this.x = obj.x;
-                this.y = obj.y;
-                this.orientation = obj.orientation;
-                this.opacity = obj.opacity;
-                this.scaleX  = obj.scaleX;
-                this.scaleY  = obj.scaleY;
+            __update: function(options){
+                this.x = options.x;
+                this.y = options.y;
+                this.orientation = options.orientation;
+                this.opacity = options.opacity;
+                this.scaleX  = options.scaleX;
+                this.scaleY  = options.scaleY;
             },
-            addAnimation: function(options){
+            addAnimation: function(options, append){
                 var animation = new Animation(this, options);
-                this.animations.push(animation);
+                var queue = this.animationQueue
+                if(append){
+                    var i = this.animationQueue.length - 1
+                    if(this.animationQueue[i]){
+                        animation.from = this.animationQueue[i].to;
+                    }
+                    this.animationQueue.push(animation);
+                }else{
+                    this.animationQueue = [animation];
+                     this.framesQueue = [];
+                }
             },
-            getModelAnimation: function(){
-                var result = this.animations;
-                if(result.length > 0){
-                    this.animations = [];
-                    return result;
+            getModelAnimation: function(batchSize){
+                var animationQueue = this.animationQueue;
+                if(animationQueue.length > 0){
+                    var temp = animationQueue.shift();
+                    temp = temp.split(batchSize);
+                    if(temp.remain !== null){
+                        animationQueue.unshift(temp.remain);    
+                    }
+                    return temp.first;
                 }else{
                     return null;    
                 }
+            },
+            getRenderData: function(step){
+                var framesQueue = this.framesQueue;
+                if(this.currentFrame === null){
+                    if(framesQueue.length === 0){
+                        return this;        
+                    }
+                    this.currentFrame = framesQueue.shift();
+                    this.frameStartTime = new Date().getTime();
+                } 
+                var currentFrame = this.currentFrame;
+                var delta = new Date().getTime() - this.frameStartTime;
+                console.log(this.name + " " + currentFrame.length);    
+                
+                var animationProp = MathUtil.ANIMATION_PROP_ARR;
+                var frameIndex = Math.round(delta/step) * animationProp.length;
+                if(frameIndex + animationProp.length > currentFrame.length){
+                    this.currentFrame = null;
+                    return this.getRenderData(step);    
+                }
+
+                for(var i=0, count=animationProp.length; i<count; i++) {
+                    this[animationProp[5-i]] = currentFrame[frameIndex + i];
+                }
+ 
+                return this;
             },
             rasterize: function(img){
                 var tempCanvas = document.createElement("canvas");

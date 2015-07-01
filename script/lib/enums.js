@@ -10,9 +10,7 @@ define(function(){
             Worker: {
                 Init: "Worker Init",
                 Ready: "Worker Ready",
-                ProcessKeyFrame: "Worker Process Key Frame",
-                Continue: "Worker Continue",
-                UpdateInfo: "Worker Update Info"
+                ProcessAnimations: "Worker Process Animations"
             }
         },
         Timeline:{

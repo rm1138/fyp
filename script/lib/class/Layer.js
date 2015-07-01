@@ -11,8 +11,7 @@ define([
         this.animationManager = fw.getAnimationManager();
         this.name = name;
         this.modelCount = 0;
-        this.zIndexModelMapping = [];
-        this.nameModelMapping = {};
+        this.zIndexNameMapping = [];
 
         this.canvas = document.createElement("canvas");
         this.bufferCanvas = document.createElement("canvas");
@@ -26,41 +25,39 @@ define([
             this.canvas.style.zIndex = zIndex;
             this.zIndex = zIndex;
         }
-        
-        this.timeline = new Timeline();
-        this.callBackMapping = {};
+     
         this.isDirty = false;
         this.state = enums.LayerState.stopped;
     }
 
     Layer.prototype = {
         addModel: function(options){
-            var that = this;
             var model = new Model(options);
             if(typeof options.zIndex === "number"){
-                this.zIndexModelMapping.splice(options.zIndex, 0, model);       
+                this.zIndexNameMapping.splice(options.zIndex, 0, options.name);      
             }else{
-                this.zIndexModelMapping.push(model);
+                this.zIndexNameMapping.push(options.name);
             }
-            this.nameModelMapping[model.name] = model;
+            this.animationManager.addModel(model);
             this.modelCount += 1;
             return model;
         },
         removeModel: function(arg){
-            //To Be Implement Object Pool
+            var name,
+                index;
             if(typeof arg === "number"){
-                var name = this.zIndexModelMapping[arg].name;
-                this.zIndexModelMapping.splice(arg, 1);
-                delete this.nameModelMapping[name];
+                name = this.zIndexNameMapping[arg];
+                index = arg;
             }else if (typeof arg === "string"){
-                var zIndex = this.nameModelMapping[arg].zIndex;
-                delete this.nameModelMapping[arg];
-                this.zIndexModelMapping.splice(zIndex, 1);
+                name = arg;
+                index = this.zIndexNameMapping.indexOf(arg);
             }
+            this.zIndexNameMapping.splice(index, 1);
+            this.animationManager.removeModel(name);
             this.modelCount -= 1;
         },
-        getModelByName: function(name){
-            return this.nameModelMapping[zIndex];    
+        getModel: function(name){
+            return this.animationManager.getModel(name);    
         },
         setZIndex: function(zIndex) {
             this.zIndex = zIndex;    
@@ -78,54 +75,34 @@ define([
             this.state = enums.LayerState.stopped;
             console.log("stopped");
         },
-        getTimeline: function(){
-            return this.timeline;    
-        },
-        getLayerAnimation: function() {
-            var result = {},
-                models = this.zIndexModelMapping,
-                i = models.length,
-                count = 0;
-            while(i--){
-                var modelAnimation = models[i].getModelAnimation();
-                if(modelAnimation !== null){
-                    result[models[i].name] = modelAnimation;
-                    count+=1;
-                }
-            }
-            return {
-                layerName: this.name,
-                layerAnimations: result,
-                layerAnimationsCount: count
-            };
-        },
         __renderOnBuffer: function(){
-            var animations = this.timeline.getAnimations(this.modelCount, this.animationManager.step);
-            if(this.state === enums.LayerState.playing && animations !== null){
-
-                var renderModels = this.zIndexModelMapping;
-                var count = renderModels.length - 1;
+            if(this.state === enums.LayerState.playing){
+                
+                var animationManager = this.animationManager;
+                var zIndexNameMapping = this.zIndexNameMapping;
                 var ctx = this.bufferCtx;
-                var model;
-                ctx.clearRect(0, 0, this.width, this.height);  
-                while(model = renderModels[count]){
-                    var animation = animations[count];
-
-                    
-                    ctx.globalAlpha = animation.opacity;
-                    ctx.translate(animation.x, animation.y);
-                    ctx.rotate(-MathUtil.radians(animation.orientation));
-                    ctx.scale(animation.scaleX, animation.scaleY);
-                    ctx.drawImage(
-                        model.img,
-                        -model.width/2, 
-                        -model.height/2
-                    );
-                    ctx.scale(1/animation.scaleX, 1/animation.scaleY);
-                    ctx.rotate(MathUtil.radians(animation.orientation));
-                    ctx.translate(-animation.x, -animation.y);
-                    model.__update(animation);
-                    count--;
+                ctx.clearRect(0, 0, this.width, this.height);
+                
+                for(var i=0, count=this.modelCount; i<count; i+=1){    
+                    var name = zIndexNameMapping[i];
+                    if(typeof name === "undefined")
+                        continue;
+                    var model = animationManager.getModel(name).getRenderData(animationManager.step);
+                    if(model.img){
+  
+                        ctx.globalAlpha = model.opacity;
+                        ctx.translate(model.x, model.y);
+                        ctx.rotate(-MathUtil.radians(model.orientation));
+                        ctx.scale(model.scaleX, model.scaleY);
+                        ctx.drawImage(
+                            model.img,
+                            -model.width/2, 
+                            -model.height/2
+                        );
+                        ctx.scale(1/model.scaleX, 1/model.scaleY);
+                        ctx.rotate(MathUtil.radians(model.orientation));
+                        ctx.translate(-model.x, -model.y);
+                    }
                 }
                 this.isDirty = true;
             }
