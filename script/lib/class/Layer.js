@@ -85,8 +85,10 @@ define([
                 
                 for(var i=0, count=this.modelCount; i<count; i+=1){    
                     var name = zIndexNameMapping[i];
-                    if(typeof name === "undefined")
+                    if(typeof name === "undefined"){
+                        console.log(i);
                         continue;
+                    }
                     var model = animationManager.getModel(name).getRenderData(animationManager.step);
                     if(model.img){
   

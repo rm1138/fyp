@@ -75,7 +75,6 @@ define([
             if(!this.requestId){
                 this.running = true;
                 this.__ticking();
-                this.animationManager.start();
             }
         },
         pause: function () {
@@ -83,7 +82,6 @@ define([
                 this.running = false;
                 window.cancelAnimationFrame(this.requestId);
                 this.requestId = 0;
-                this.animationManager.pause();
             }
         },
         __ticking: function(){
@@ -94,6 +92,7 @@ define([
                     that.__ticking();
                 });
                 this.renderer.render(layers);
+                this.animationManager.processAnimation();
             }
         },
         getAnimationManager: function(){

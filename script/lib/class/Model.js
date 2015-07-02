@@ -44,16 +44,20 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
             },
             addAnimation: function(options, append){
                 var animation = new Animation(this, options);
-                var queue = this.animationQueue
+                var frameQueue = this.framesQueue;
+                var animationQueue = this.animationQueue;
                 if(append){
-                    var i = this.animationQueue.length - 1
-                    if(this.animationQueue[i]){
-                        animation.from = this.animationQueue[i].to;
+                    var i = animationQueue.length;
+                    var j = frameQueue.length;
+                    if(i--){
+                        animation.from = animationQueue[i].to;
+                    }else if(j--){
+                        MathUtil.getAnimationPropFromTypedArray(animation.from , frameQueue[j], frameQueue[j].length-MathUtil.ANIMATION_PROP_ARR.length);
                     }
                     this.animationQueue.push(animation);
                 }else{
                     this.animationQueue = [animation];
-                     this.framesQueue = [];
+                    this.framesQueue = [];
                 }
             },
             getModelAnimation: function(batchSize){
@@ -80,7 +84,7 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
                 } 
                 var currentFrame = this.currentFrame;
                 var delta = new Date().getTime() - this.frameStartTime;
-                console.log(this.name + " " + currentFrame.length);    
+                //console.log(this.name + " " + currentFrame.length);    
                 
                 var animationProp = MathUtil.ANIMATION_PROP_ARR;
                 var frameIndex = Math.round(delta/step) * animationProp.length;
@@ -89,9 +93,7 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
                     return this.getRenderData(step);    
                 }
 
-                for(var i=0, count=animationProp.length; i<count; i++) {
-                    this[animationProp[5-i]] = currentFrame[frameIndex + i];
-                }
+                MathUtil.getAnimationPropFromTypedArray(this, currentFrame, frameIndex);
  
                 return this;
             },

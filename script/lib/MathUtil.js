@@ -64,11 +64,11 @@ define(function(){
     
     MathUtil.processAnimations = function(animations, nameMap, step, batchSize){
         var i = animations.length;
-        var totalFramesCount = 0;
+        var totalDuration = 0;
         while(i--){
-            totalFramesCount += animations[i].end - animations[i].start;
+            totalDuration += animations[i].end - animations[i].start;
         }
-        var frameSize = Math.ceil(totalFramesCount / step) * this.ANIMATION_PROP_ARR.length;
+        var frameSize = Math.ceil(totalDuration / step) * this.ANIMATION_PROP_ARR.length;
         var result = new Float32Array(frameSize);
         var step = step;
         var resultNameMap = [];
@@ -86,12 +86,13 @@ define(function(){
                 startIndex: ptr.val, 
                 endIndex: null
             };
-   
             //generate frame
-            while(timeLapse <= end) {
+            while(Math.round(timeLapse) < end) {
                 MathUtil.processAnimation(animation, timeLapse/duration, result, ptr);
                 timeLapse += step;
             } 
+
+
             mapping.endIndex = ptr.val;
             resultNameMap.push(mapping);
         }
@@ -100,6 +101,13 @@ define(function(){
             frames: result
         };      
     };
+    
+    MathUtil.getAnimationPropFromTypedArray = function(animation, typedArray, start){
+        var animationProp = MathUtil.ANIMATION_PROP_ARR;
+        for(var i=0, count=animationProp.length; i<count; i++) {
+            animation[animationProp[5-i]] = typedArray[start + i];
+        } 
+    }
     
     MathUtil.radians = function(degrees) {
         return degrees * Math.PI / 180;

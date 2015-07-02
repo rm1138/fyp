@@ -10,7 +10,7 @@ require(['lib/main'], function(Framework){
     var model = [];
 
     layer = fw.createLayer("layer0");
-    for(var i=0; i<80; i++){
+    for(var i=0; i<1000; i++){
         model[i] = layer.addModel({
             type: "image",
             x: Math.random() * container.width,
@@ -26,8 +26,9 @@ require(['lib/main'], function(Framework){
 
     var started = true;
     container.addEventListener("click", function(){
+        setInterval(function(){
         var easing = "linear";
-        for(var i=0; i<80; i++){
+        for(var i=0; i<1000; i++){
             model[i].addAnimation({
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
@@ -36,9 +37,10 @@ require(['lib/main'], function(Framework){
                 scaleX: Math.random() * 1.2,
                 scaleY: Math.random() * 1.2,
                 opacity: Math.random(),
-                duration: 20000
+                duration: Math.random() * 10000
             }, true);
         }
+        }, 1000);
     }, false);
 });
 //Math.floor(Math.random() * 100)

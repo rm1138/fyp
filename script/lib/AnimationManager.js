@@ -7,7 +7,6 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
         this.batchSize = 200;
         this.framesQueue = [];
         this.supportWorker = false;
-        this.loopId = 0;
         this.framesCache = {};
         this.nameFramesMapCache = {};
         if(window.Worker){
@@ -17,18 +16,7 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
             this.initWorker();  
         }
     };
-    
     AnimationManager.prototype = {
-        start: function(){
-            var that = this;
-            this.processAnimation();
-            this.loopId = setInterval(function(){
-                that.processAnimation();
-            }, this.batchSize/2);
-        },
-        pause: function(){
-            clearInterval(this.loopId);    
-        },
         addModel: function(model){
             this.models[model.name] = model;  
             this.modelCount++;
@@ -128,7 +116,7 @@ define(['lib/enums', 'lib/MathUtil'], function(enums, MathUtil) {
                 };
                 workers[i].postMessage({
                     command: command,
-                    payload: payload
+                    payload: new Float32Array(payload)
                 });
             }
         },
