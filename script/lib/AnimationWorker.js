@@ -1,13 +1,13 @@
 importScripts("../external/require.js");
 var functionContainer = {};
 
-require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, imgUtil, MathUtil){
-          
-    onmessage = function(e){
+require(["enums", "loopUtil", "imgUtil", "MathUtil"], function (enums, loopUtil, imgUtil, MathUtil) {
+
+    onmessage = function (e) {
         var command = e.data.command;
         var payload = e.data.payload;
-        
-        if(command === enums.Command.Worker.ProcessAnimations){
+
+        if (command === enums.Command.Worker.ProcessAnimations) {
             debugger;
             var temp = MathUtil.processAnimations(payload.animations, payload.modelNamesMap, payload.step, payload.batchSize);
             var result = {
@@ -15,12 +15,12 @@ require(["enums", "loopUtil", "imgUtil", "MathUtil"], function(enums, loopUtil, 
                 frames: temp.frames,
                 nameMap: temp.nameMap
             };
-            
+
             self.postMessage({
                 command: command,
                 payload: result,
             }, [result.frames.buffer]);
-        }else if(command === enums.Command.Worker.Init){
+        } else if (command === enums.Command.Worker.Init) {
             workerId = e.data.workerId;
             console.log("Worker inited");
         }

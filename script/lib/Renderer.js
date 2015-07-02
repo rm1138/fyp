@@ -4,15 +4,15 @@
 */
 define([
         'lib/enums'
-    ], function(enums){
-    
+    ], function (enums) {
+
     //Renderer, the only connecton to the DOM Canvas Element
-    var Renderer = Renderer || function(canvasDomID, fw){
+    var Renderer = Renderer || function (canvasDomID, fw) {
         this.container = document.getElementById(canvasDomID);
         this.container.style.position = "relative";
-        if(this.container === null){
+        if (this.container === null) {
             console.info("DOM Element not found");
-            return null;   
+            return null;
         }
         this.fw = fw;
         this.width = this.container.width;
@@ -31,9 +31,9 @@ define([
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
     };
-    
+
     Renderer.prototype = {
-        initLayer: function(renderLayer) {
+        initLayer: function (renderLayer) {
             var canvas = renderLayer.canvas;
             canvas.id = renderLayer.name;
             canvas.width = this.width;
@@ -51,50 +51,50 @@ define([
             renderLayer.bufferCtx = bufferCanvas.getContext('2d')
         },
 
-        render: function(layers){
+        render: function (layers) {
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
             this.renderOnCanvas(layers);
             this.renderOnBuffer(layers);
-            this.delta.push(delta); 
-            if(this.delta.length > 100){
-                this.delta.shift();    
+            this.delta.push(delta);
+            if (this.delta.length > 100) {
+                this.delta.shift();
             }
         },
-        renderOnCanvas: function(layers) {
+        renderOnCanvas: function (layers) {
             var i = layers.length;
-            while(i--){
+            while (i--) {
                 layers[i].__render();
             }
             this.renderFrameCount();
         },
-        renderOnBuffer: function(layers) {
+        renderOnBuffer: function (layers) {
             var i = layers.length;
-            while(i--){
+            while (i--) {
                 layers[i].__renderOnBuffer();
-            }         
+            }
         },
-        renderFrameCount: function(){
+        renderFrameCount: function () {
             var average,
                 sum = 0,
                 deltaArr = this.delta,
                 i = deltaArr.length;
-            while(i--){
+            while (i--) {
                 sum += deltaArr[i];
             }
             average = sum / deltaArr.length;
-            var fps = Math.floor(1000/average);
+            var fps = Math.floor(1000 / average);
             var ctx = this.fpsCtx;
             ctx.clearRect(5, 5, 200, 35);
             ctx.beginPath();
             ctx.fillStyle = "#FF0000";
             ctx.font = "30px Arial";
-            ctx.fillText("Avg FPS: " + fps,  10, 30);
+            ctx.fillText("Avg FPS: " + fps, 10, 30);
             ctx.closePath();
             var that = this;
         }
     };
-    
+
     return Renderer;
 });

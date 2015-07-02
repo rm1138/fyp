@@ -1,6 +1,6 @@
 define([
         "lib/Framework"
-    ], function(Framework) {
+    ], function (Framework) {
     return Framework;
 });
 

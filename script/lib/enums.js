@@ -1,30 +1,30 @@
-define(function(){
+define(function () {
     var enums = {
-        ModelType:{
+        ModelType: {
             Image: 0,
             Text: 1,
             Rect: 2,
             Cycle: 3
         },
-        Command:{
+        Command: {
             Worker: {
                 Init: "Worker Init",
                 Ready: "Worker Ready",
                 ProcessAnimations: "Worker Process Animations"
             }
         },
-        Timeline:{
-            PlaybackDirection:{
+        Timeline: {
+            PlaybackDirection: {
                 forward: "forward",
                 backward: "backward"
             }
         },
-        LayerProperties:{
+        LayerProperties: {
             UI: 1,
             ScrollPane: 2,
             Background: 3
         },
-        LayerState:{
+        LayerState: {
             playing: 0,
             stopped: 1
         }

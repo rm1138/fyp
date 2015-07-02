@@ -4,68 +4,94 @@
  * only considering the t value for the range [0, 1] => [0, 1]
  */
 
-define(function(){
+define(function () {
     var MathUtil = {};
-    
+
     MathUtil.ANIMATION_PROP_ARR = ['x', 'y', 'scaleX', 'scaleY', 'orientation', 'opacity'];
-    MathUtil.step = 1000/60;
+    MathUtil.step = 1000 / 60;
     MathUtil.EasingFunctions = {
         // no easing, no acceleration
-        linear: function (t) { return t },
+        linear: function (t) {
+            return t
+        },
         // accelerating from zero velocity
-        easeInQuad: function (t) { return t*t },
+        easeInQuad: function (t) {
+            return t * t
+        },
         // decelerating to zero velocity
-        easeOutQuad: function (t) { return t*(2-t) },
+        easeOutQuad: function (t) {
+            return t * (2 - t)
+        },
         // acceleration until halfway, then deceleration
-        easeInOutQuad: function (t) { return t<.5 ? 2*t*t : -1+(4-2*t)*t },
+        easeInOutQuad: function (t) {
+            return t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+        },
         // accelerating from zero velocity 
-        easeInCubic: function (t) { return t*t*t },
+        easeInCubic: function (t) {
+            return t * t * t
+        },
         // decelerating to zero velocity 
-        easeOutCubic: function (t) { return (--t)*t*t+1 },
+        easeOutCubic: function (t) {
+            return (--t) * t * t + 1
+        },
         // acceleration until halfway, then deceleration 
-        easeInOutCubic: function (t) { return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1 },
+        easeInOutCubic: function (t) {
+            return t < .5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+        },
         // accelerating from zero velocity 
-        easeInQuart: function (t) { return t*t*t*t },
+        easeInQuart: function (t) {
+            return t * t * t * t
+        },
         // decelerating to zero velocity 
-        easeOutQuart: function (t) { return 1-(--t)*t*t*t },
+        easeOutQuart: function (t) {
+            return 1 - (--t) * t * t * t
+        },
         // acceleration until halfway, then deceleration
-        easeInOutQuart: function (t) { return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t },
+        easeInOutQuart: function (t) {
+            return t < .5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t
+        },
         // accelerating from zero velocity
-        easeInQuint: function (t) { return t*t*t*t*t },
+        easeInQuint: function (t) {
+            return t * t * t * t * t
+        },
         // decelerating to zero velocity
-        easeOutQuint: function (t) { return 1+(--t)*t*t*t*t },
+        easeOutQuint: function (t) {
+            return 1 + (--t) * t * t * t * t
+        },
         // acceleration until halfway, then deceleration 
-        easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
-    } 
-    
-    MathUtil.processAnimation = function(animation, progress, result, ptr){
+        easeInOutQuint: function (t) {
+            return t < .5 ? 16 * t * t * t * t * t : 1 + 16 * (--t) * t * t * t * t
+        }
+    }
+
+    MathUtil.processAnimation = function (animation, progress, result, ptr) {
         var from = animation.from;
         var to = animation.to;
         var easing = MathUtil.EasingFunctions[animation.easing];
         var keys = MathUtil.ANIMATION_PROP_ARR;
         var i = keys.length;
 
-        while(i--) {
+        while (i--) {
             var key = keys[i];
-            if(from[key] !== to[key]) {
+            if (from[key] !== to[key]) {
                 result[ptr.val++] = MathUtil.valueProjection(from[key], to[key], progress, easing);
-            }else{
+            } else {
                 result[ptr.val++] = (from[key]);
-            } 
+            }
         }
     };
-    
-    MathUtil.valueProjection = function(from, to, progress, easing){
-        if(typeof easing === "function"){
+
+    MathUtil.valueProjection = function (from, to, progress, easing) {
+        if (typeof easing === "function") {
             progress = easing(progress);
         }
-        return from * (1-progress) + to * progress;
+        return from * (1 - progress) + to * progress;
     };
-    
-    MathUtil.processAnimations = function(animations, nameMap, step, batchSize){
+
+    MathUtil.processAnimations = function (animations, nameMap, step, batchSize) {
         var i = animations.length;
         var totalDuration = 0;
-        while(i--){
+        while (i--) {
             totalDuration += animations[i].end - animations[i].start;
         }
         var frameSize = Math.ceil(totalDuration / step) * this.ANIMATION_PROP_ARR.length;
@@ -75,22 +101,22 @@ define(function(){
         var ptr = {
             val: 0
         };
-        for(var i=0, count=animations.length; i<count; i+=1){ 
-            var animation = animations[i];    
+        for (var i = 0, count = animations.length; i < count; i += 1) {
+            var animation = animations[i];
             var start = animation.start;
             var timeLapse = start;
             var end = animation.end;
             var duration = animation.duration;
             var mapping = {
-                name: nameMap[i], 
-                startIndex: ptr.val, 
+                name: nameMap[i],
+                startIndex: ptr.val,
                 endIndex: null
             };
             //generate frame
-            while(Math.round(timeLapse) < end) {
-                MathUtil.processAnimation(animation, timeLapse/duration, result, ptr);
+            while (Math.round(timeLapse) < end) {
+                MathUtil.processAnimation(animation, timeLapse / duration, result, ptr);
                 timeLapse += step;
-            } 
+            }
 
 
             mapping.endIndex = ptr.val;
@@ -99,27 +125,27 @@ define(function(){
         return {
             nameMap: resultNameMap,
             frames: result
-        };      
+        };
     };
-    
-    MathUtil.getAnimationPropFromTypedArray = function(animation, typedArray, start){
+
+    MathUtil.getAnimationPropFromTypedArray = function (animation, typedArray, start) {
         var animationProp = MathUtil.ANIMATION_PROP_ARR;
-        for(var i=0, count=animationProp.length; i<count; i++) {
-            animation[animationProp[5-i]] = typedArray[start + i];
-        } 
+        for (var i = 0, count = animationProp.length; i < count; i++) {
+            animation[animationProp[5 - i]] = typedArray[start + i];
+        }
     }
-    
-    MathUtil.radians = function(degrees) {
+
+    MathUtil.radians = function (degrees) {
         return degrees * Math.PI / 180;
     };
-    
-    MathUtil.degrees = function(radians) {
+
+    MathUtil.degrees = function (radians) {
         return radians * 180 / Math.PI;
     };
-    
-    MathUtil.genRandomId = function() {
-        return Math.random().toString(36).substr(2, 5);   
+
+    MathUtil.genRandomId = function () {
+        return Math.random().toString(36).substr(2, 5);
     }
-    
+
     return MathUtil;
 });
