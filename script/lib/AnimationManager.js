@@ -116,7 +116,7 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
                 };
                 workers[i].postMessage({
                     command: command,
-                    payload: new Float32Array(payload)
+                    payload: payload
                 });
             }
         },
@@ -127,3 +127,4 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
 
     return AnimationManager;
 });
+//MathUtil.animationsToTypedFloat32Array(animations.slice(i * animationPerWorker, (i + 1) * animationPerWorker)),

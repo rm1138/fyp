@@ -10,7 +10,7 @@ require(['lib/main'], function (Framework) {
     var model = [];
 
     layer = fw.createLayer("layer0");
-    for (var i = 0; i < 1000; i++) {
+    for (var i = 0; i < 10; i++) {
         model[i] = layer.addModel({
             type: "image",
             x: Math.random() * container.width,
@@ -28,7 +28,7 @@ require(['lib/main'], function (Framework) {
     container.addEventListener("click", function () {
         setInterval(function () {
             var easing = "linear";
-            for (var i = 0; i < 1000; i++) {
+            for (var i = 0; i < 10; i++) {
                 model[i].addAnimation({
                     x: Math.random() * container.width,
                     y: Math.random() * container.height,

@@ -9,6 +9,9 @@ define(function () {
 
     MathUtil.ANIMATION_PROP_ARR = ['x', 'y', 'scaleX', 'scaleY', 'orientation', 'opacity'];
     MathUtil.step = 1000 / 60;
+    MathUtil.easingArr = [
+        "linear", "easeInQuad", "easeOutQuad", "easeInOutQuad", "easeInCubic", "easeOutCubic", "easeInOutCubic", "easeInQuart", "easeOutQuart", "easeInOutQuart", "easeInQuint", "easeOutQuint", "easeInOutQuint"
+    ];
     MathUtil.EasingFunctions = {
         // no easing, no acceleration
         linear: function (t) {
@@ -127,6 +130,32 @@ define(function () {
             frames: result
         };
     };
+
+    MathUtil.animationsToTypedFloat32Array = function (animations) {
+        var arraySize = animations.length * (MathUtil.ANIMATION_PROP_ARR.length * 2 + 4);
+        var result = new Float32Array(arraySize);
+        var arrPtr = 0;
+        for (var i = 0, count = animations.length; i < count; i += 1) {
+            var animation = animations[i];
+            result[arrPtr++] = animation.start;
+            result[arrPtr++] = animation.end;
+            result[arrPtr++] = animation.duration;
+            result[arrPtr++] = MathUtil.easingArr.indexOf(animation.easing);
+            result[arrPtr++] = animation.from.opacity;
+            result[arrPtr++] = animation.to.opacity;
+            result[arrPtr++] = animation.from.orientation;
+            result[arrPtr++] = animation.to.orientation;
+            result[arrPtr++] = animation.from.scaleX;
+            result[arrPtr++] = animation.to.scaleX;
+            result[arrPtr++] = animation.from.scaleY;
+            result[arrPtr++] = animation.to.scaleY;
+            result[arrPtr++] = animation.from.x;
+            result[arrPtr++] = animation.to.x;
+            result[arrPtr++] = animation.from.y;
+            result[arrPtr++] = animation.to.y;
+        }
+        return result;
+    }
 
     MathUtil.getAnimationPropFromTypedArray = function (animation, typedArray, start) {
         var animationProp = MathUtil.ANIMATION_PROP_ARR;

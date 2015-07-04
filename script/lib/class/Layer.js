@@ -1,10 +1,8 @@
 define([
-        'class/KeyFrame',
         'class/Model',
         'lib/enums',
-        'lib/MathUtil',
-        'class/Timeline'
-    ], function (KeyFrame, Model, enums, MathUtil, Timeline) {
+        'lib/MathUtil'
+    ], function (Model, enums, MathUtil) {
 
     var Layer = Layer || function (name, zIndex, fw) {
         this.fw = fw;
@@ -80,14 +78,24 @@ define([
 
                 var animationManager = this.animationManager;
                 var zIndexNameMapping = this.zIndexNameMapping;
-                var ctx = this.bufferCtx;
-                ctx.clearRect(0, 0, this.width, this.height);
+                var ctx = this.ctx;
+                //ctx.clearRect(0, 0, this.width, this.height);
 
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var name = zIndexNameMapping[i];
                     if (typeof name === "undefined") {
                         console.log(i);
                         continue;
+                    }
+                    var originalModel = animationManager.getModel(name);
+                    if (originalModel.img) {
+                        ctx.translate(originalModel.x, originalModel.y);
+                        ctx.rotate(-MathUtil.radians(originalModel.orientation));
+                        ctx.scale(originalModel.scaleX, originalModel.scaleY);
+                        ctx.clearRect(-originalModel.width / 2, -originalModel.height / 2, originalModel.width, originalModel.height);
+                        ctx.scale(1 / originalModel.scaleX, 1 / originalModel.scaleY);
+                        ctx.rotate(MathUtil.radians(originalModel.orientation));
+                        ctx.translate(-originalModel.x, -originalModel.y);
                     }
                     var model = animationManager.getModel(name).getRenderData(animationManager.step);
                     if (model.img) {
@@ -110,8 +118,8 @@ define([
         __render: function () {
             if (this.isDirty) {
                 var ctx = this.ctx;
-                ctx.clearRect(0, 0, this.width, this.height);
-                ctx.drawImage(this.bufferCanvas, 0, 0);
+                //ctx.clearRect(0, 0, this.width, this.height);
+                //ctx.drawImage(this.bufferCanvas, 0, 0);
                 this.isDirty = false;
             }
         }
