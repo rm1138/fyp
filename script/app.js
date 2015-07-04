@@ -4,13 +4,7 @@ requirejs.config({
     baseUrl: 'script',
     paths: {
         framework: framework,
-        class: framework + 'class',
-        "underscore": "external/underscore",
-    },
-    shim: {
-        underscore: {
-            exports: '_'
-        }
+        class: framework + 'class'
     }
 });
 

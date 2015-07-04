@@ -1,24 +1,20 @@
 define(["lib/enums", "class/Animation", "lib/MathUtil"],
     function (enums, Animation, MathUtil) {
         var Model = Model || function (obj) {
-
             var that = this;
             if (obj.type === "image") {
                 this.type = enums.ModelType.Image;
                 var img = new Image();
                 img.src = obj.url;
                 img.onload = function () {
-                    that.img = this; //that.rasterize(this);    
+                    that.img = that.resizeImage(this, MathUtil.scaleRatio);    
                     that.width = this.width;
                     that.height = this.height;
                 };
-            } else if (obj.type === "canvasObject") {
-                this.img = document.createElement("canvas");
-                var ctx = img.getContext("2d");
-                /*
-                    To be implement
-                    Simple Canvas API
-                */
+            } else if (obj.type === "canvas") {
+                this.img = obj.canvas;
+				this.width = obj.canvas.width;
+                this.height = obj.canvas.height;
             }
             this.name = obj.name;
             this.x = obj.x;
@@ -31,6 +27,11 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
             this.currentFrame = null;
             this.frameStartTime = 0;
             this.framesQueue = [];
+			
+			if(!Model.uniqueId++){
+				Model.uniqueId = 1;
+			}
+			this.uniqueId = Model.uniqueId;
         };
 
         Model.prototype = {
@@ -97,19 +98,31 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
 
                 return this;
             },
-            rasterize: function (img) {
+            rasterize: function (img, ratio) {
                 var tempCanvas = document.createElement("canvas");
-                tempCanvas.width = img.width;
-                tempCanvas.height = img.height;
+                tempCanvas.width = img.width * ratio;
+                tempCanvas.height = img.height * ratio;
                 var tempCtx = tempCanvas.getContext("2d");
-                tempCtx.drawImage(img, 0, 0);
+                tempCtx.drawImage(img, 0, 0, img.width * ratio, img.height * ratio);
                 return this.convertCanvasToImage(tempCanvas);
             },
             convertCanvasToImage: function (canvas) {
                 var image = new Image();
                 image.src = canvas.toDataURL("image/png");
                 return image;
-            }
+            },
+			resizeImage: function(img, quality){
+                var tempCanvas = document.createElement("canvas");
+                tempCanvas.width = img.width*quality;
+                tempCanvas.height = img.height*quality;
+                var tempCtx = tempCanvas.getContext("2d");
+                tempCtx.mozImageSmoothingEnabled = true;
+                tempCtx.webkitImageSmoothingEnabled = true;
+                tempCtx.msImageSmoothingEnabled = true;
+                tempCtx.imageSmoothingEnabled = false;
+                tempCtx.drawImage(img, 0, 0, img.width*quality, img.height*quality);
+                return this.convertCanvasToImage(tempCanvas);
+            },
         }
         return Model;
     });
@@ -141,10 +154,5 @@ define(["lib/enums", "class/Animation", "lib/MathUtil"],
                 tempCtx.drawImage(img, 0, 0, img.width/quality, img.height/quality);
                 return this.convertCanvasToImage(tempCanvas);
             },
-            convertCanvasToImage: function (canvas) {
-                var image = new Image();
-                image.src = canvas.toDataURL("image/png");
-                return image;
-            }
             
 */
