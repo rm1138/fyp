@@ -8,17 +8,17 @@ require(["enums", "MathUtil"], function (enums, MathUtil) {
         var payload = e.data.payload;
 
         if (command === enums.Command.Worker.ProcessAnimations) {
-            var temp = MathUtil.processAnimations(payload.animations, payload.modelNamesMap, payload.step, payload.batchSize);
+            var frames = MathUtil.processAnimations(payload.animations, payload.step);
             var result = {
-                frameId: payload.frameId,
-                frames: temp.frames,
-                nameMap: temp.nameMap
+                frames: frames,
+                animations: payload.animations,
+                step: payload.step
             };
 
             self.postMessage({
                 command: command,
                 payload: result,
-            }, [result.frames.buffer]);
+            }, [result.frames.buffer, result.animations.buffer]);
         } else if (command === enums.Command.Worker.Init) {
             workerId = e.data.workerId;
             console.log("Worker inited");

@@ -52,6 +52,7 @@ define([
         },
 
         render: function (layers) {
+
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;

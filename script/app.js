@@ -5,7 +5,8 @@ requirejs.config({
     paths: {
         framework: framework,
         class: framework + 'class'
-    }
+    },
+    urlArgs: "bust=" + (new Date()).getTime()
 });
 
 // Start loading the main app file. Put all of

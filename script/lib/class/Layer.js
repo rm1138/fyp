@@ -1,15 +1,16 @@
 define([
         'class/Model',
         'lib/enums',
-        'lib/MathUtil'
-    ], function (Model, enums, MathUtil) {
+        'lib/MathUtil',
+        'lib/SptialHashing'
+    ], function (Model, enums, MathUtil, SptailHashing) {
 
     var Layer = Layer || function (name, zIndex, fw) {
         this.fw = fw;
         this.animationManager = fw.getAnimationManager();
         this.name = name;
         this.modelCount = 0;
-        this.zIndexNameMapping = [];
+        this.zIndexMapping = [];
 
         this.canvas = document.createElement("canvas");
         this.bufferCanvas = document.createElement("canvas");
@@ -24,17 +25,18 @@ define([
             this.zIndex = zIndex;
         }
 
-        this.isDirty = false;
         this.state = enums.LayerState.stopped;
+        this.sptialHashMapping = new SptailHashing(8);
     }
 
     Layer.prototype = {
         addModel: function (options) {
-            var model = new Model(options);
+            var that = this;
+            var model = new Model(options, this);
             if (typeof options.zIndex === "number") {
-                this.zIndexNameMapping.splice(options.zIndex, 0, options.name);
+                this.zIndexMapping.splice(options.zIndex, 0, model);
             } else {
-                this.zIndexNameMapping.push(options.name);
+                this.zIndexMapping.push(model);
             }
             this.animationManager.addModel(model);
             this.modelCount += 1;
@@ -77,51 +79,81 @@ define([
             if (this.state === enums.LayerState.playing) {
 
                 var animationManager = this.animationManager;
-                var zIndexNameMapping = this.zIndexNameMapping;
+                var zIndexMapping = this.zIndexMapping;
                 var ctx = this.ctx;
-                //ctx.clearRect(0, 0, this.width, this.height);
-
+                var renderModels = [];
+                var renderRegion = {
+                    x1: null,
+                    y1: null,
+                    x2: null,
+                    y2: null
+                };
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
-                    var name = zIndexNameMapping[i];
-                    if (typeof name === "undefined") {
-                        console.log(i);
-                        continue;
-                    }
-                    var originalModel = animationManager.getModel(name);
-                    if (originalModel.img) {
-                        ctx.translate(originalModel.x, originalModel.y);
-                        ctx.rotate(-MathUtil.radians(originalModel.orientation));
-                        ctx.scale(originalModel.scaleX, originalModel.scaleY);
-                        ctx.clearRect(-originalModel.width / 2, -originalModel.height / 2, originalModel.width, originalModel.height);
-                        ctx.scale(1 / originalModel.scaleX, 1 / originalModel.scaleY);
-                        ctx.rotate(MathUtil.radians(originalModel.orientation));
-                        ctx.translate(-originalModel.x, -originalModel.y);
-                    }
-                    var model = animationManager.getModel(name).getRenderData(animationManager.step);
-                    if (model.img) {
+                    var model = zIndexMapping[i];
+                    model.update();
+                    if (model.isActive) {
+                        model.isActive = false;
+                        var box = MathUtil.getBox(model.last || mod);
+                        if (renderRegion.x1 === null) {
+                            renderRegion.x1 = box.x;
+                            renderRegion.y1 = box.y;
+                            renderRegion.x2 = box.x + box.width;
+                            renderRegion.y2 = box.y + box.height;
+                        } else {
+                            if (renderRegion.x1 > box.x) {
+                                renderRegion.x1 = box.x;
+                            }
+                            if (renderRegion.y1 > box.y) {
+                                renderRegion.y1 = box.y;
+                            }
+                            if (renderRegion.x2 < box.x + box.width) {
+                                renderRegion.x2 = box.x + box.width;
+                            }
+                            if (renderRegion.y2 < box.y + box.height) {
+                                renderRegion.y2 = box.y + box.height;
+                            }
+                        }
 
-                        ctx.globalAlpha = model.opacity;
-                        ctx.translate(model.x, model.y);
-                        ctx.rotate(-MathUtil.radians(model.orientation));
-                        ctx.scale(model.scaleX, model.scaleY);
-                        ctx.drawImage(
-                            model.img, -model.width / 2, -model.height / 2
-                        );
-                        ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-                        ctx.rotate(MathUtil.radians(model.orientation));
-                        ctx.translate(-model.x, -model.y);
+                    }
+                };
+                ctx.clearRect(renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1);
+
+                for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
+                    var model = zIndexMapping[i];
+                    var modelBox = MathUtil.getBox(model);
+                    var isOverlap = MathUtil.isOverlap(
+                        modelBox.x, modelBox.y, modelBox.width, modelBox.height,
+                        renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1
+                    );
+                    if (isOverlap) {
+                        renderModels.push(model);
                     }
                 }
-                this.isDirty = true;
+
+                for (var i = 0, count = renderModels.length; i < count; i += 1) {
+                    var model = renderModels[i];
+                    this.drawModel(renderModels[i], ctx);
+                }
+
             }
         },
+        drawModel: function (model, ctx) {
+            ctx.globalAlpha = model.opacity;
+            ctx.translate(model.x, model.y);
+            ctx.rotate(-MathUtil.radians(model.orientation));
+            ctx.scale(model.scaleX, model.scaleY);
+            ctx.drawImage(
+                model.img, -model.width / 2, -model.height / 2
+            );
+            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+            ctx.rotate(MathUtil.radians(model.orientation));
+            ctx.translate(-model.x, -model.y);
+            console.log(model.name);
+        },
         __render: function () {
-            if (this.isDirty) {
-                var ctx = this.ctx;
-                //ctx.clearRect(0, 0, this.width, this.height);
-                //ctx.drawImage(this.bufferCanvas, 0, 0);
-                this.isDirty = false;
-            }
+            // var ctx = this.ctx;
+            //ctx.clearRect(0, 0, this.width, this.height);
+            //ctx.drawImage(this.bufferCanvas, 0, 0);
         }
     }
 

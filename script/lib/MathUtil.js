@@ -91,78 +91,36 @@ define(function () {
         return from * (1 - progress) + to * progress;
     };
 
-    MathUtil.processAnimations = function (animations, nameMap, step, batchSize) {
-        var i = animations.length;
-        var totalDuration = 0;
-        while (i--) {
-            totalDuration += animations[i].end - animations[i].start;
+    MathUtil.processAnimations = function (animations, step) {
+        var totalFrames = 0;
+        for (var i = 2, count = animations.length; i < count; i += 3) {
+            totalFrames += Math.ceil(animations[i] / step);
         }
-        var frameSize = Math.ceil(totalDuration / step) * this.ANIMATION_PROP_ARR.length;
-        var result = new Float32Array(frameSize);
-        var step = step;
-        var resultNameMap = [];
-        var ptr = {
-            val: 0
-        };
-        for (var i = 0, count = animations.length; i < count; i += 1) {
-            var animation = animations[i];
-            var start = animation.start;
-            var timeLapse = start;
-            var end = animation.end;
-            var duration = animation.duration;
-            var mapping = {
-                name: nameMap[i],
-                startIndex: ptr.val,
-                endIndex: null
-            };
-            //generate frame
-            while (Math.round(timeLapse) < end) {
-                MathUtil.processAnimation(animation, timeLapse / duration, result, ptr);
-                timeLapse += step;
+        var result = new Float32Array(totalFrames);
+
+        var ptr = 0;
+        for (var i = 0, count = animations.length; i < count;) {
+            var delta = animations[i++];
+            var easingIdx = animations[i++];
+            var duration = animations[i++];
+            var frameCount = Math.ceil(duration / step);
+            var easing = MathUtil.easingArr[easingIdx];
+            var start = 0;
+
+            var index = 0;
+            while (index < frameCount) {
+                result[ptr++] = MathUtil.valueProjection(0, delta, start / duration, easing);
+                start += step;
+                index++;
             }
-
-
-            mapping.endIndex = ptr.val;
-            resultNameMap.push(mapping);
+            if (index !== Math.ceil(duration / step)) {
+                debugger;
+            }
         }
-        return {
-            nameMap: resultNameMap,
-            frames: result
-        };
+
+        return result;
     };
 
-    MathUtil.animationsToTypedFloat32Array = function (animations) {
-        var arraySize = animations.length * (MathUtil.ANIMATION_PROP_ARR.length * 2 + 4);
-        var result = new Float32Array(arraySize);
-        var arrPtr = 0;
-        for (var i = 0, count = animations.length; i < count; i += 1) {
-            var animation = animations[i];
-            result[arrPtr++] = animation.start;
-            result[arrPtr++] = animation.end;
-            result[arrPtr++] = animation.duration;
-            result[arrPtr++] = MathUtil.easingArr.indexOf(animation.easing);
-            result[arrPtr++] = animation.from.opacity;
-            result[arrPtr++] = animation.to.opacity;
-            result[arrPtr++] = animation.from.orientation;
-            result[arrPtr++] = animation.to.orientation;
-            result[arrPtr++] = animation.from.scaleX;
-            result[arrPtr++] = animation.to.scaleX;
-            result[arrPtr++] = animation.from.scaleY;
-            result[arrPtr++] = animation.to.scaleY;
-            result[arrPtr++] = animation.from.x;
-            result[arrPtr++] = animation.to.x;
-            result[arrPtr++] = animation.from.y;
-            result[arrPtr++] = animation.to.y;
-        }
-        return result;
-    }
-
-    MathUtil.getAnimationPropFromTypedArray = function (animation, typedArray, start) {
-        var animationProp = MathUtil.ANIMATION_PROP_ARR;
-        for (var i = 0, count = animationProp.length; i < count; i++) {
-            animation[animationProp[5 - i]] = typedArray[start + i];
-        }
-    }
 
     MathUtil.radians = function (degrees) {
         return degrees * Math.PI / 180;
@@ -175,6 +133,29 @@ define(function () {
     MathUtil.genRandomId = function () {
         return Math.random().toString(36).substr(2, 5);
     }
+
+    MathUtil.getBox = function getBox(obj) {
+        var width = Math.abs(obj.width * obj.scaleX * Math.cos(MathUtil.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.sin(MathUtil.radians(obj.orientation)));
+        var height = Math.abs(obj.width * obj.scaleX * Math.sin(MathUtil.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.cos(MathUtil.radians(obj.orientation)))
+        var result = {
+            width: width,
+            height: height,
+            x: obj.x - width / 2,
+            y: obj.y - height / 2
+        };
+
+        return result;
+    }
+
+    MathUtil.isOverlap = function (x1, y1, w1, h1, x2, y2, w2, h2) {
+        var result = false;
+
+        if (x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2) {
+            result = true;
+        }
+        return result;
+    }
+
 
     return MathUtil;
 });

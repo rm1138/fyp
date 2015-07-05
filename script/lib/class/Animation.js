@@ -27,8 +27,6 @@ define(['lib/MathUtil'], function (MathUtil) {
             };
             //pre-format the easing function
             this.easing = MathUtil.EasingFunctions[animation.easing] ? animation.easing : "linear";
-            this.start = 0;
-            this.end = animation.duration;
             this.duration = animation.duration;
         }
     }

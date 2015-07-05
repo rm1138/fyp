@@ -1,14 +1,14 @@
-define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
+define(['lib/enums', 'lib/MathUtil', 'lib/AnimationHashMap'], function (enums, MathUtil, AnimationHashMap) {
     var AnimationManager = AnimationManager || function (fw) {
         this.fw = fw;
         this.models = {};
         this.modelCount = 0;
         this.step = MathUtil.step; //process frame step
-        this.batchSize = 200;
         this.framesQueue = [];
         this.supportWorker = false;
         this.framesCache = {};
         this.nameFramesMapCache = {};
+        this.animationHashMap = new AnimationHashMap(this);
         if (window.Worker) {
             this.supportWorker = true;
             this.numOfThread = navigator.hardwareConcurrency || 4;
@@ -26,7 +26,9 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
             this.modelCount--;
         },
         getModel: function (modelName) {
-            return this.models[modelName];
+            var model = this.models[modelName];
+            model.updateModel(this.step);
+            return model;
         },
         onWorkerReturn: function (e) {
             var command = e.data.command;
@@ -34,24 +36,7 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
 
             var that = this;
             if (command === enums.Command.Worker.ProcessAnimations) {
-                this.nameFramesMapCache[payload.frameId].push(payload.nameMap);
-                this.framesCache[payload.frameId].push(payload.frames);
-                if (this.nameFramesMapCache[payload.frameId].length === this.workers.length) {
-                    var framesCache = this.framesCache[payload.frameId];
-                    var nameFramesMapCache = this.nameFramesMapCache[payload.frameId];
-                    var models = this.models;
-                    delete this.framesCache[payload.frameId];
-                    delete this.nameFramesMapCache[payload.frameId];
-                    var nameMap = {};
-
-                    for (var i = 0, length = this.workers.length; i < length; i++) {
-                        var temp = nameFramesMapCache[i];
-                        while (temp.length > 0) {
-                            var mapping = temp.shift();
-                            models[mapping.name].framesQueue.push(framesCache[i].subarray(mapping.startIndex, mapping.endIndex));
-                        }
-                    }
-                }
+                this.updateMapping(payload.frames, payload.animations, payload.step);
             } else if (command === enums.Command.Worker.Ready) {
                 e.target.postMessage({
                     command: enums.Command.Worker.Init,
@@ -71,53 +56,65 @@ define(['lib/enums', 'lib/MathUtil'], function (enums, MathUtil) {
             }
         },
         processAnimation: function () {
-            if (this.modelCount === 0) {
-                return;
-            }
             var models = this.models;
-            var modelNames = Object.keys(models);
-            var modelNamesMap = [];
-            var batchSize = this.batchSize;
-            var animations = [];
+            var modelsName = Object.keys(models);
+            var i = modelsName.length;
+            var animationHashMap = this.animationHashMap;
 
-            var i = modelNames.length;
+            var animationsNeedToProcess = [];
             while (i--) {
-                var modelName = modelNames[i];
+                var modelName = modelsName[i];
                 var model = models[modelName];
-                var animation = model.getModelAnimation(batchSize);
-                if (animation !== null) {
-                    animations.push(animation);
-                    modelNamesMap.push(modelName);
+                var animation = model.getFirstAnimation();
+                if (animation) {
+                    var frames = animationHashMap.hashAnimation(animation, this.step);
+                    if (frames.duration !== -1) {
+                        model.removeFirstAnimation();
+                        model.addFrames(frames);
+                    }
                 }
             }
-            if (modelNamesMap.length > 0) {
-                this.processAnimationInWorker(modelNamesMap, animations);
+            animationsNeedToProcess = animationHashMap.getProcessQueue();
+
+            if (animationsNeedToProcess.length > 0) {
+                this.processAnimationInWorker(animationsNeedToProcess);
             }
         },
-        processAnimationInWorker: function (modelNamesMap, animations) {
-            var command = enums.Command.Worker.ProcessAnimations;
+        processAnimationInWorker: function (animations) {
+            var count = animations.length / 3;
             var workers = this.workers;
-            var animationPerWorker = animations.length / workers.length;
+            var batchSize = Math.round(count / workers.length);
+            var command = enums.Command.Worker.ProcessAnimations;
             var step = this.step;
-            var batchSize = this.batchSize;
-            var frameId = MathUtil.genRandomId();
-            var i = this.workers.length;
 
-            this.framesCache[frameId] = [];
-            this.nameFramesMapCache[frameId] = [];
-
-            while (i--) {
+            for (var i = 0, workerCount = workers.length; i < workerCount; i += 1) {
+                var arr = animations.slice((i * batchSize) * 3, (i + 1) * batchSize * 3);
+                arr = new Float32Array(arr);
                 var payload = {
-                    modelNamesMap: modelNamesMap.slice(i * animationPerWorker, (i + 1) * animationPerWorker),
-                    animations: animations.slice(i * animationPerWorker, (i + 1) * animationPerWorker),
-                    step: step,
-                    frameId: frameId,
-                    batchSize: batchSize
+                    animations: arr,
+                    step: step
                 };
-                workers[i].postMessage({
+                this.workers[i].postMessage({
                     command: command,
                     payload: payload
-                });
+                }, [payload.animations.buffer]);
+            }
+        },
+        updateMapping: function (frames, animations, step) {
+            var start = 0;
+            var animationHashMap = this.animationHashMap;
+            for (var i = 0, count = animations.length; i < count;) {
+                var delta = animations[i++];
+                var easingIdx = animations[i++];
+                var duration = animations[i++];
+                var end = start + Math.ceil(duration / step);
+                var animationFrames = frames.subarray(start, end);
+                animationHashMap.addFrames(delta, easingIdx, animationFrames);
+
+                if (animationFrames[0] !== 0) {
+                    debugger;
+                }
+                start = end;
             }
         },
         throttling: function () {

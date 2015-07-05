@@ -42,6 +42,8 @@ define([
             console.log("DOM Element not found");
             return undefined;
         }
+
+        this.animationProcessTime = 0;
     };
 
     Framework.prototype = {
@@ -93,7 +95,12 @@ define([
                     that.__ticking();
                 });
                 this.renderer.render(layers);
+                var now = new Date().getTime();
                 this.animationManager.processAnimation();
+                if (now - this.animationProcessTime > 200) {
+                    this.animationManager.processAnimation();
+                    this.animationProcessTime = now;
+                }
             }
         },
         getAnimationManager: function () {
