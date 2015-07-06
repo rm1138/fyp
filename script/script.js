@@ -11,36 +11,35 @@ require(['lib/main'], function (Framework) {
     layer1 = fw.createLayer("layer1");
     fw.start();
 
-    for (var i = 0; i < 5;) {
+    for (var i = 0; i < 100;) {
 
         model[i] = layer1.addModel({
             type: "image",
             x: Math.random() * container.width,
             y: Math.random() * container.height,
             name: "model" + i,
-            url: "img/sensei.png"
+            url: "img/square.svg"
         });
         i++;
     }
     layer1.play();
     var started = true;
     var j = 500;
-    container.addEventListener("click", function () {
-        //setInterval(function () {
-        var easing = "easeInOutQuad";
-        for (var i = 0; i < 2; i++) {
-            model[i].addAnimation({
-                x: Math.random() * container.width,
-                y: Math.random() * container.height,
-                orientation: Math.random() * 360 - 180,
-                easing: easing, //easeInOutCubic
-                scaleX: Math.random() * 1.2,
-                scaleY: Math.random() * 1.2,
-                opacity: Math.random() * 0.2 + 0.8,
-                duration: Math.random() * 1000 + 1500
-            }, false)
-        }
-        //}, 500);
-    }, false);
+
+    container.addEventListener("click", function (e) {
+
+            for(var i=0; i<2; i++){
+                model[i].addAnimation({
+                    x: Math.random() * container.width,
+                    y: Math.random() * container.height,
+                    opcity: Math.random() * 0.2 + 0.8,
+                    orientation: Math.random() * 360 - 180,
+                    scaleX: Math.random() * 1.2,
+                    scaley: Math.random() * 1.2,   
+                    duration: Math.random() * 1000 + 1000
+                }, false);
+            }
+
+    });
 });
 //Math.floor(Math.random() * 100)

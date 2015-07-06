@@ -1,4 +1,4 @@
-define(['lib/MathUtil'], function (MathUtil) {
+define(['lib/Util'], function (Util) {
     var AnimationHashMap = AnimationHashMap || function (fw) {
 
         this.animationManager = fw;
@@ -13,9 +13,9 @@ define(['lib/MathUtil'], function (MathUtil) {
     AnimationHashMap.prototype = {
         hashAnimation: function (animation, step) {
             var animationManager = this.animationManager;
-            var animationKeys = MathUtil.ANIMATION_PROP_ARR;
+            var animationKeys = Util.ANIMATION_PROP_ARR;
             var duration = Math.round(animation.duration);
-            var easingIdx = MathUtil.easingArr.indexOf(animation.easing);
+            var easingIdx = Util.easingArr.indexOf(animation.easing);
             var i = animationKeys.length;
             var result = {
                 duration: duration

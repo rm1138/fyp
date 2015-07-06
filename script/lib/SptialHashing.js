@@ -1,14 +1,11 @@
-define(['lib/MathUtil'], function (MathUtil) {
+define(['lib/Util'], function (Util) {
     "use strict";
 
     var DEFAULT_POWER_OF_TWO = 5;
 
-
-
-
     function makeKeysFn(shift) {
         return function (obj) {
-            var box = MathUtil.getBox(obj);
+            var box = Util.getBox(obj);
             var sx = box.x >> shift,
                 sy = box.y >> shift,
                 ex = (box.x + box.width) >> shift,
@@ -66,8 +63,8 @@ define(['lib/MathUtil'], function (MathUtil) {
             }
             this.list.push(obj);
         },
-        update: function (obj, oldOptions) {
-            this.remove(obj, oldOptions);
+        update: function (obj) {
+            this.remove(obj, obj.last);
             this.insert(obj);
         },
         remove: function (obj, oldOptions) {
@@ -88,7 +85,7 @@ define(['lib/MathUtil'], function (MathUtil) {
             index = this.list.indexOf(obj);
             this.list.splice(index, 1);
         },
-        retrieve: function (obj) {
+        setToRerender: function (obj) {
             var result = [],
                 keys, i, key;
             if (!obj) {
@@ -103,13 +100,10 @@ define(['lib/MathUtil'], function (MathUtil) {
                 if (bucket) {
                     var j = bucket.length;
                     while (j--) {
-                        if (result.indexOf(bucket[j]) === -1) {
-                            result.push(bucket[j]);
-                        }
+                        bucket[j].needRender = true;
                     }
                 }
             }
-
             return result;
         }
     };

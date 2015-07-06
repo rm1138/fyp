@@ -84,16 +84,17 @@ define([
             while (i--) {
                 sum += deltaArr[i];
             }
-            average = sum / deltaArr.length;
-            var fps = Math.floor(1000 / average);
-            var ctx = this.fpsCtx;
-            ctx.clearRect(5, 5, 200, 35);
-            ctx.beginPath();
-            ctx.fillStyle = "#FF0000";
-            ctx.font = "30px Arial";
-            ctx.fillText("Avg FPS: " + fps, 10, 30);
-            ctx.closePath();
-            var that = this;
+            if(sum > 0){
+                average = sum / deltaArr.length;
+                var fps = Math.floor(1000 / average);
+                var ctx = this.fpsCtx;
+                ctx.clearRect(5, 5, 200, 35);
+                ctx.beginPath();
+                ctx.fillStyle = "#FF0000";
+                ctx.font = "30px Arial";
+                ctx.fillText("Avg FPS: " + fps, 10, 30);
+                ctx.closePath();
+            }
         }
     };
 

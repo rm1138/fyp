@@ -1,13 +1,9 @@
-define(['lib/enums', 'lib/MathUtil', 'lib/AnimationHashMap'], function (enums, MathUtil, AnimationHashMap) {
+define(['lib/enums', 'lib/Util', 'lib/AnimationHashMap'], function (enums, Util, AnimationHashMap) {
     var AnimationManager = AnimationManager || function (fw) {
         this.fw = fw;
-        this.models = {};
-        this.modelCount = 0;
-        this.step = MathUtil.step; //process frame step
-        this.framesQueue = [];
+        this.models = [];
+        this.step = Util.step; //process frame step
         this.supportWorker = false;
-        this.framesCache = {};
-        this.nameFramesMapCache = {};
         this.animationHashMap = new AnimationHashMap(this);
         if (window.Worker) {
             this.supportWorker = true;
@@ -18,17 +14,11 @@ define(['lib/enums', 'lib/MathUtil', 'lib/AnimationHashMap'], function (enums, M
     };
     AnimationManager.prototype = {
         addModel: function (model) {
-            this.models[model.name] = model;
-            this.modelCount++;
+            this.models.push(model);
         },
-        removeModel: function (modelName) {
-            delete this.models[modelName];
-            this.modelCount--;
-        },
-        getModel: function (modelName) {
-            var model = this.models[modelName];
-            model.updateModel(this.step);
-            return model;
+        removeModel: function (model) {
+            var index = this.models.indexOf(model);
+            this.models.splice(index, 1)
         },
         onWorkerReturn: function (e) {
             var command = e.data.command;
@@ -57,20 +47,18 @@ define(['lib/enums', 'lib/MathUtil', 'lib/AnimationHashMap'], function (enums, M
         },
         processAnimation: function () {
             var models = this.models;
-            var modelsName = Object.keys(models);
-            var i = modelsName.length;
+            var i = models.length;
             var animationHashMap = this.animationHashMap;
 
             var animationsNeedToProcess = [];
             while (i--) {
-                var modelName = modelsName[i];
-                var model = models[modelName];
-                var animation = model.getFirstAnimation();
+                var timeline = models[i].timeline;
+                var animation = timeline.__getFirstAnimation();
                 if (animation) {
                     var frames = animationHashMap.hashAnimation(animation, this.step);
                     if (frames.duration !== -1) {
-                        model.removeFirstAnimation();
-                        model.addFrames(frames);
+                        timeline.__removeFirstAnimation();
+                        timeline.__addFrames(frames);
                     }
                 }
             }
@@ -124,4 +112,4 @@ define(['lib/enums', 'lib/MathUtil', 'lib/AnimationHashMap'], function (enums, M
 
     return AnimationManager;
 });
-//MathUtil.animationsToTypedFloat32Array(animations.slice(i * animationPerWorker, (i + 1) * animationPerWorker)),
+//Util.animationsToTypedFloat32Array(animations.slice(i * animationPerWorker, (i + 1) * animationPerWorker)),

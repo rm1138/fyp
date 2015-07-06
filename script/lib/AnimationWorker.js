@@ -1,14 +1,14 @@
 importScripts("../external/require.js");
 var functionContainer = {};
 
-require(["enums", "MathUtil"], function (enums, MathUtil) {
+require(["enums", "Util"], function (enums, Util) {
 
     onmessage = function (e) {
         var command = e.data.command;
         var payload = e.data.payload;
 
         if (command === enums.Command.Worker.ProcessAnimations) {
-            var frames = MathUtil.processAnimations(payload.animations, payload.step);
+            var frames = Util.processAnimations(payload.animations, payload.step);
             var result = {
                 frames: frames,
                 animations: payload.animations,

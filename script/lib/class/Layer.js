@@ -1,9 +1,9 @@
 define([
         'class/Model',
         'lib/enums',
-        'lib/MathUtil',
+        'lib/Util',
         'lib/SptialHashing'
-    ], function (Model, enums, MathUtil, SptailHashing) {
+    ], function (Model, enums, Util, SptailHashing) {
 
     var Layer = Layer || function (name, zIndex, fw) {
         this.fw = fw;
@@ -26,7 +26,8 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(8);
+        this.sptialHashMapping = new SptailHashing(2);
+        this.dirtyRegions = [];
     }
 
     Layer.prototype = {
@@ -52,8 +53,8 @@ define([
                 name = arg;
                 index = this.zIndexNameMapping.indexOf(arg);
             }
+            this.animationManager.removeModel(this.zIndexNameMapping[index]);
             this.zIndexNameMapping.splice(index, 1);
-            this.animationManager.removeModel(name);
             this.modelCount -= 1;
         },
         getModel: function (name) {
@@ -77,83 +78,71 @@ define([
         },
         __renderOnBuffer: function () {
             if (this.state === enums.LayerState.playing) {
-
-                var animationManager = this.animationManager;
+                var sptialHashingMappig = this.sptialHashMapping;
                 var zIndexMapping = this.zIndexMapping;
-                var ctx = this.ctx;
+                var ctx = this.bufferCtx;
                 var renderModels = [];
-                var renderRegion = {
-                    x1: null,
-                    y1: null,
-                    x2: null,
-                    y2: null
-                };
+
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var model = zIndexMapping[i];
-                    model.update();
+                    model.__frameDispatch();
                     if (model.isActive) {
                         model.isActive = false;
-                        var box = MathUtil.getBox(model.last || mod);
-                        if (renderRegion.x1 === null) {
-                            renderRegion.x1 = box.x;
-                            renderRegion.y1 = box.y;
-                            renderRegion.x2 = box.x + box.width;
-                            renderRegion.y2 = box.y + box.height;
-                        } else {
-                            if (renderRegion.x1 > box.x) {
-                                renderRegion.x1 = box.x;
-                            }
-                            if (renderRegion.y1 > box.y) {
-                                renderRegion.y1 = box.y;
-                            }
-                            if (renderRegion.x2 < box.x + box.width) {
-                                renderRegion.x2 = box.x + box.width;
-                            }
-                            if (renderRegion.y2 < box.y + box.height) {
-                                renderRegion.y2 = box.y + box.height;
-                            }
-                        }
+                        var boxOld = Util.getBox(model.last);
+                        var boxNew = Util.getBox(model.current);
 
+                        this.dirtyRegions.push(boxOld);
+                        this.dirtyRegions.push(boxNew);
+                        ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
+                        ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
+                        sptialHashingMappig.setToRerender(model);
+                        sptialHashingMappig.update(model);  
+                        sptialHashingMappig.setToRerender(model);
                     }
                 };
-                ctx.clearRect(renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1);
+                
 
                 for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
                     var model = zIndexMapping[i];
-                    var modelBox = MathUtil.getBox(model);
-                    var isOverlap = MathUtil.isOverlap(
-                        modelBox.x, modelBox.y, modelBox.width, modelBox.height,
-                        renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1
-                    );
-                    if (isOverlap) {
+                    if(model.needRender){
                         renderModels.push(model);
+                        model.needRender = false;
+                        
                     }
-                }
-
+                }      
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
-                    this.drawModel(renderModels[i], ctx);
+                    this.drawModel(model.img, model.current, ctx);
                 }
-
             }
         },
-        drawModel: function (model, ctx) {
+        drawModel: function (img, model, ctx) {
             ctx.globalAlpha = model.opacity;
             ctx.translate(model.x, model.y);
-            ctx.rotate(-MathUtil.radians(model.orientation));
+            ctx.rotate(-Util.radians(model.orientation));
             ctx.scale(model.scaleX, model.scaleY);
             ctx.drawImage(
-                model.img, -model.width / 2, -model.height / 2
+                img, -model.width / 2, -model.height / 2
             );
             ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-            ctx.rotate(MathUtil.radians(model.orientation));
+            ctx.rotate(Util.radians(model.orientation));
             ctx.translate(-model.x, -model.y);
-            console.log(model.name);
         },
         __render: function () {
-            // var ctx = this.ctx;
-            //ctx.clearRect(0, 0, this.width, this.height);
-            //ctx.drawImage(this.bufferCanvas, 0, 0);
+            var dirtyRegions = this.dirtyRegions;
+            var i = dirtyRegions.length;
+            var ctx = this.ctx;
+            while(i--){
+                var dirtyRegion = dirtyRegions[i];
+                var x = dirtyRegion.x;
+                var y = dirtyRegion.y;
+                var width = dirtyRegion.width;
+                var height = dirtyRegion.height;
+
+                ctx.clearRect(x, y, width, height);
+                ctx.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
+            }
+            this.dirtyRegions = [];
         }
     }
 
