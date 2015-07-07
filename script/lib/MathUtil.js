@@ -113,9 +113,7 @@ define(function () {
                 start += step;
                 index++;
             }
-            if (index !== Math.ceil(duration / step)) {
-                debugger;
-            }
+            console.log(result[ptr - 1] - delta);
         }
 
         return result;

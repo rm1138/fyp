@@ -1,12 +1,12 @@
-define(['lib/Util', 'class/Animation'], function(Util, Animation){
-    var Timeline = function(model){
+define(['lib/Util', 'class/Animation'], function (Util, Animation) {
+    var Timeline = function (model) {
         this.animationQueue = [];
         this.currentFrame = null;
         this.frameStartTime = 0;
-        this.framesQueue = []; 
+        this.framesQueue = [];
         this.model = model;
     };
-    
+
     Timeline.prototype = {
         __addAnimation: function (options, append) {
             var animationQueue = this.animationQueue;
@@ -20,7 +20,7 @@ define(['lib/Util', 'class/Animation'], function(Util, Animation){
                 this.currentFrame = null;
             }
         },
-        __getFrame: function(){
+        __getFrame: function () {
             if (this.currentFrame === null) {
                 if (this.framesQueue.length === 0) {
                     return null;
@@ -31,10 +31,14 @@ define(['lib/Util', 'class/Animation'], function(Util, Animation){
             var duration = this.currentFrame.duration;
             var timelapse = new Date().getTime() - this.frameStartTime;
             if (timelapse > duration) {
+                var result = this.currentFrame;
                 this.currentFrame = null;
-                return this.__getFrame();
+                return {
+                    frames: result,
+                    startTime: this.frameStartTime
+                };
             }
-            
+
             return {
                 frames: this.currentFrame,
                 startTime: this.frameStartTime
@@ -50,6 +54,6 @@ define(['lib/Util', 'class/Animation'], function(Util, Animation){
             this.framesQueue.push(frames);
         }
     };
-    
+
     return Timeline;
 });

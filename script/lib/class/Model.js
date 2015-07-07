@@ -34,6 +34,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.type = enums.ModelType.Canvas;
                 this.__completeImg(obj.canvas);
             }
+            this.setting = false;
         };
 
         Model.prototype = {
@@ -73,6 +74,9 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     while (i--) {
                         var animationName = animationPorp[i];
                         var frameIndex = Math.round(timelapse * (frames[animationName].length - 1) / duration);
+                        if (frameIndex >= frames[animationName].length) {
+                            frameIndex = frames[animationName].length - 1;
+                        }
                         var value = this.base[animationName] + frames[animationName][frameIndex];
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
@@ -93,6 +97,19 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 zIndexMapping.splice(oldIndex, 1);
                 zIndexMapping.splice(zIndex, 0, this);
                 return this;
+            },
+            set: function (options) {
+                if (this.isActive) {
+                    return
+                }
+                this.last = Util.simpleObjectClone(this.current);
+                for (var key in options) {
+                    this.current[key] = options[key];
+                }
+                this.__updateFinal(options);
+                this.last.keys = this.current.keys;
+                this.current.keys = null;
+                this.isActive = true;
             },
             __rasterize: function (img) {
                 var tempCanvas = document.createElement("canvas");

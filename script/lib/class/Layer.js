@@ -28,6 +28,7 @@ define([
         this.state = enums.LayerState.stopped;
         this.sptialHashMapping = new SptailHashing(3);
         this.dirtyRegions = [];
+        this.rendering = false;
     }
 
     Layer.prototype = {
@@ -79,6 +80,7 @@ define([
             console.log("stopped");
         },
         __renderOnBuffer: function () {
+            this.rendering = true;
             if (this.state === enums.LayerState.playing) {
                 var sptialHashingMappig = this.sptialHashMapping;
                 var zIndexMapping = this.zIndexMapping;
@@ -91,10 +93,14 @@ define([
                         model.isActive = false;
                         var boxOld = Util.getBox(model.last);
                         var boxNew = Util.getBox(model.current);
-
+                        console.log(boxOld);
+                        console.log(boxNew);
                         this.dirtyRegions.push(boxOld);
                         this.dirtyRegions.push(boxNew);
+
                         ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
+                        ctx.globalAlpha = 0.1;
+                        ctx.fillRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
                         ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
 
                         sptialHashingMappig.updateAndSetNearModelRerender(model);
@@ -113,15 +119,10 @@ define([
 
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
-                    if (model.passive) {
-                        var box = Util.getBox(model.current);
-                        ctx.globalAlpha = 0.1;
-                        ctx.fillRect(box.x, box.y, box.width, box.height);
-                        ctx.globalAlpha = 1;
-                    }
                     this.drawModel(model.img, model.current, ctx);
                 }
             }
+            this.rendering = false;
         },
         drawModel: function (img, model, ctx) {
             ctx.globalAlpha = model.opacity;

@@ -64,8 +64,6 @@ define(['lib/Util'], function (Util) {
                         bucket[j].needRender = true;
                         if (bucket[j] === model) {
                             bucket.splice(j, 1);
-                        } else {
-                            bucket[j].passive = true;
                         }
                     }
                 }

@@ -97,8 +97,9 @@ define([
                 this.renderer.render(layers);
                 var now = new Date().getTime();
                 this.animationManager.processAnimation();
-                if (now - this.animationProcessTime > 200) {
-                    this.animationManager.processAnimation();
+                this.animationManager.processAnimation();
+                if (now - this.animationProcessTime > 50) {
+
                     this.animationProcessTime = now;
                 }
             }

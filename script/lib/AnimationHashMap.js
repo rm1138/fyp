@@ -14,7 +14,7 @@ define(['lib/Util'], function (Util) {
         hashAnimation: function (animation, step) {
             var animationManager = this.animationManager;
             var animationKeys = Util.ANIMATION_PROP_ARR;
-            var duration = Math.round(animation.duration);
+            var duration = Math.round(animation.duration + step);
             var easingIdx = Util.easingArr.indexOf(animation.easing);
             var i = animationKeys.length;
             var result = {
@@ -28,7 +28,7 @@ define(['lib/Util'], function (Util) {
                 if (!temp || step * temp.length < duration) {
                     this.processQueue.push(delta);
                     this.processQueue.push(easingIdx);
-                    this.processQueue.push(duration * 10);
+                    this.processQueue.push((duration) * 10);
                     result.duration = -1;
 
                 } else {

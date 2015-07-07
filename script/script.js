@@ -11,12 +11,12 @@ require(['lib/main'], function (Framework) {
     layer1 = fw.createLayer("layer1");
     fw.start();
 
-    for (var i = 0; i < 100;) {
+    for (var i = 0; i < 10;) {
 
         model[i] = layer1.addModel({
             type: "image",
-            x: Math.random() * container.width,
-            y: Math.random() * container.height,
+            x: container.width / 2,
+            y: container.height / 2,
             name: "model" + i,
             url: "img/square.svg"
         });
@@ -24,17 +24,12 @@ require(['lib/main'], function (Framework) {
     }
     layer1.play();
 
-    container.addEventListener("click", function (e) {
-        for (var i = 0; i < 1; i++) {
-            model[Math.floor(Math.random() * 100)].addAnimation({
-                x: Math.random() * container.width,
-                y: Math.random() * container.height,
-                opcity: Math.random() * 0.2 + 0.8,
-                orientation: Math.random() * 360 - 180,
-                scaleX: Math.random() * 1.2,
-                scaley: Math.random() * 1.2,
-                duration: 10000
-            }, false);
+    container.addEventListener("mousemove", function (e) {
+        for (var i = 0; i < 10; i++) {
+            model[i].set({
+                x: e.clientX + Math.random() * 100 - 50,
+                y: e.clientY + Math.random() * 100 - 50,
+            });
         }
     });
 });
