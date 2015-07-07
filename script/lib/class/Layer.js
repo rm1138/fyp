@@ -26,7 +26,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(2);
+        this.sptialHashMapping = new SptailHashing(3);
         this.dirtyRegions = [];
     }
 
@@ -53,7 +53,9 @@ define([
                 name = arg;
                 index = this.zIndexNameMapping.indexOf(arg);
             }
+            var model = this.zIndexNameMapping[index];
             this.animationManager.removeModel(this.zIndexNameMapping[index]);
+            this.sptialHashMapping.removeAndSetNearModelRerender(this.zIndexNameMapping[index]);
             this.zIndexNameMapping.splice(index, 1);
             this.modelCount -= 1;
         },
@@ -82,7 +84,6 @@ define([
                 var zIndexMapping = this.zIndexMapping;
                 var ctx = this.bufferCtx;
                 var renderModels = [];
-
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var model = zIndexMapping[i];
                     model.__frameDispatch();
@@ -95,23 +96,29 @@ define([
                         this.dirtyRegions.push(boxNew);
                         ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
                         ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
-                        sptialHashingMappig.setToRerender(model);
-                        sptialHashingMappig.update(model);  
-                        sptialHashingMappig.setToRerender(model);
+
+                        sptialHashingMappig.updateAndSetNearModelRerender(model);
                     }
                 };
-                
+
 
                 for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
                     var model = zIndexMapping[i];
-                    if(model.needRender){
+                    if (model.needRender) {
                         renderModels.push(model);
                         model.needRender = false;
-                        
+
                     }
-                }      
+                }
+
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
+                    if (model.passive) {
+                        var box = Util.getBox(model.current);
+                        ctx.globalAlpha = 0.1;
+                        ctx.fillRect(box.x, box.y, box.width, box.height);
+                        ctx.globalAlpha = 1;
+                    }
                     this.drawModel(model.img, model.current, ctx);
                 }
             }
@@ -129,20 +136,23 @@ define([
             ctx.translate(-model.x, -model.y);
         },
         __render: function () {
+            var ctx = this.ctx;
             var dirtyRegions = this.dirtyRegions;
             var i = dirtyRegions.length;
-            var ctx = this.ctx;
-            while(i--){
+
+            while (i--) {
                 var dirtyRegion = dirtyRegions[i];
                 var x = dirtyRegion.x;
                 var y = dirtyRegion.y;
                 var width = dirtyRegion.width;
                 var height = dirtyRegion.height;
-
                 ctx.clearRect(x, y, width, height);
                 ctx.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
             }
             this.dirtyRegions = [];
+
+            //            ctx.clearRect(0, 0, this.width, this.height);
+            //            ctx.drawImage(this.bufferCanvas, 0, 0);
         }
     }
 

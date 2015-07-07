@@ -7,7 +7,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
             this.timeline = new Timeline(this);
             this.isActive = false;
             this.needRender = false;
-            
+
             this.current = {
                 x: obj.x,
                 y: obj.y,
@@ -18,11 +18,11 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 width: 0,
                 height: 0
             }
-            
+
             this.last = null;
             this.base = null;
             this.final = null;
-            
+
             if (obj.type === "image") {
                 this.type = enums.ModelType.Image;
                 var img = new Image();
@@ -37,8 +37,8 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
         };
 
         Model.prototype = {
-            __completeImg: function(img){
-                this.img = img;
+            __completeImg: function (img) {
+                this.img = this.__rasterize(img);
                 this.current.width = img.width;
                 this.current.height = img.height;
                 this.isActive = true;
@@ -56,18 +56,18 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 return this;
             },
             __frameDispatch: function (step) {
-                var framesObj = this.timeline.__getFrame();    
-                
+                var framesObj = this.timeline.__getFrame();
+
                 if (framesObj === null) {
                     return;
-                } else { 
+                } else {
                     var frames = framesObj.frames;
                     var timelapse = new Date().getTime() - framesObj.startTime;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
                     var duration = frames.duration;
                     var i = animationPorp.length;
 
-                    if(timelapse === 0){
+                    if (timelapse === 0) {
                         this.base = Util.simpleObjectClone(this.current);
                     }
                     while (i--) {
@@ -77,12 +77,14 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
                     }
+                    this.last.keys = this.current.keys;
+                    this.current.keys = null;
                     this.isActive = true;
                 }
             },
-            __updateFinal: function(options){
-                for(var key in options){
-                    this.final[key] = options[key];    
+            __updateFinal: function (options) {
+                for (var key in options) {
+                    this.final[key] = options[key];
                 }
             },
             setZIndex: function (zIndex) {
@@ -98,7 +100,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 tempCanvas.height = img.height;
                 var tempCtx = tempCanvas.getContext("2d");
                 tempCtx.drawImage(img, 0, 0, img.width, img.height);
-                return this.convertCanvasToImage(tempCanvas);
+                return this.__convertCanvasToImage(tempCanvas);
             },
             __convertCanvasToImage: function (canvas) {
                 var image = new Image();

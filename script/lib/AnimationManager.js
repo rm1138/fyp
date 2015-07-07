@@ -98,10 +98,6 @@ define(['lib/enums', 'lib/Util', 'lib/AnimationHashMap'], function (enums, Util,
                 var end = start + Math.ceil(duration / step);
                 var animationFrames = frames.subarray(start, end);
                 animationHashMap.addFrames(delta, easingIdx, animationFrames);
-
-                if (animationFrames[0] !== 0) {
-                    debugger;
-                }
                 start = end;
             }
         },

@@ -23,23 +23,19 @@ require(['lib/main'], function (Framework) {
         i++;
     }
     layer1.play();
-    var started = true;
-    var j = 500;
 
     container.addEventListener("click", function (e) {
-
-            for(var i=0; i<2; i++){
-                model[i].addAnimation({
-                    x: Math.random() * container.width,
-                    y: Math.random() * container.height,
-                    opcity: Math.random() * 0.2 + 0.8,
-                    orientation: Math.random() * 360 - 180,
-                    scaleX: Math.random() * 1.2,
-                    scaley: Math.random() * 1.2,   
-                    duration: Math.random() * 1000 + 1000
-                }, false);
-            }
-
+        for (var i = 0; i < 1; i++) {
+            model[Math.floor(Math.random() * 100)].addAnimation({
+                x: Math.random() * container.width,
+                y: Math.random() * container.height,
+                opcity: Math.random() * 0.2 + 0.8,
+                orientation: Math.random() * 360 - 180,
+                scaleX: Math.random() * 1.2,
+                scaley: Math.random() * 1.2,
+                duration: 10000
+            }, false);
+        }
     });
 });
 //Math.floor(Math.random() * 100)

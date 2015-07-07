@@ -3,8 +3,20 @@ define(['lib/Util'], function (Util) {
 
     var DEFAULT_POWER_OF_TWO = 5;
 
-    function makeKeysFn(shift) {
-        return function (obj) {
+    var SpatialHash = SpatialHash || function (power_of_two) {
+        if (!power_of_two) {
+            power_of_two = DEFAULT_POWER_OF_TWO;
+        }
+        this.shift = power_of_two;
+        this.hash = {};
+    };
+
+    SpatialHash.prototype = {
+        getKeys: function (obj) {
+            if (obj.keys) {
+                return obj.keys;
+            }
+            var shift = this.shift;
             var box = Util.getBox(obj);
             var sx = box.x >> shift,
                 sy = box.y >> shift,
@@ -16,95 +28,63 @@ define(['lib/Util'], function (Util) {
                     keys.push("" + x + ":" + y);
                 }
             }
+
+            obj.keys = keys;
             return keys;
-        };
-    }
-
-
-    var SpatialHash = SpatialHash || function (power_of_two) {
-        if (!power_of_two) {
-            power_of_two = DEFAULT_POWER_OF_TWO;
-        }
-        this.getKeys = makeKeysFn(power_of_two);
-        this.hash = {};
-        this.list = [];
-    };
-
-    SpatialHash.prototype = {
-        clear: function () {
-            var i = this.hash.length;
-            while (i--) {
-                this.hash[i] = [];
-            }
-            this.list.length = 0;
         },
-        getNumBuckets: function () {
-            var i = this.hash.length,
-                count = 0;
-            while (i--) {
-                if (this.hash[i].length > 0) {
-                    count++;
-                }
-            }
-            return count;
-        },
-        insert: function (obj) {
-            var keys = this.getKeys(obj),
+        insert: function (model) {
+            var keys = this.getKeys(model.current),
                 i = keys.length,
                 key;
 
             while (i--) {
                 key = keys[i];
                 if (this.hash[key]) {
-                    this.hash[key].push(obj);
+                    this.hash[key].push(model);
                 } else {
-                    this.hash[key] = [obj];
+                    this.hash[key] = [model];
                 }
             }
-            this.list.push(obj);
         },
-        update: function (obj) {
-            this.remove(obj, obj.last);
-            this.insert(obj);
+        updateAndSetNearModelRerender: function (model) {
+            this.removeAndSetNearModelRerender(model, model.last);
+            this.insert(model);
         },
-        remove: function (obj, oldOptions) {
-            var keys = this.getKeys(oldOptions),
-                i = keys.length,
-                index,
-                bucket,
-                key;
+        removeAndSetNearModelRerender: function (model, last) {
+            var oldKey = this.getKeys(last || model.current),
+                i = oldKey.length,
+                j,
+                bucket;
 
             while (i--) {
-                key = keys[i];
-                bucket = this.hash[key];
-                if (bucket) {
-                    index = bucket.indexOf(obj);
-                    bucket.splice(index, 1);
+                bucket = this.hash[oldKey[i]];
+                if (typeof bucket !== "undefined") {
+                    j = bucket.length;
+                    while (j--) {
+                        bucket[j].needRender = true;
+                        if (bucket[j] === model) {
+                            bucket.splice(j, 1);
+                        } else {
+                            bucket[j].passive = true;
+                        }
+                    }
                 }
             }
-            index = this.list.indexOf(obj);
-            this.list.splice(index, 1);
+
         },
         setToRerender: function (obj) {
-            var result = [],
-                keys, i, key;
-            if (!obj) {
-                return this.list;
-            }
+            var keys, i, j, bucket;
             keys = this.getKeys(obj);
             i = keys.length;
-
             while (i--) {
-                key = keys[i];
-                var bucket = this.hash[key];
-                if (bucket) {
-                    var j = bucket.length;
+                bucket = this.hash[keys[i]];
+                if (typeof bucket !== "undefined") {
+                    j = bucket.length;
                     while (j--) {
                         bucket[j].needRender = true;
                     }
                 }
             }
-            return result;
         }
     };
 
