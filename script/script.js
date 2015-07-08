@@ -10,27 +10,38 @@ require(['lib/main'], function (Framework) {
     var model = [];
     layer1 = fw.createLayer("layer1");
     fw.start();
-
-    for (var i = 0; i < 10;) {
+    var modelCount = 100;
+    for (var i = 0; i < modelCount;) {
 
         model[i] = layer1.addModel({
             type: "image",
-            x: container.width / 2,
-            y: container.height / 2,
+            x: Math.random() * container.width,
+            y: Math.random() * container.height,
             name: "model" + i,
             url: "img/square.svg"
         });
         i++;
     }
     layer1.play();
-
-    container.addEventListener("mousemove", function (e) {
-        for (var i = 0; i < 10; i++) {
-            model[i].set({
-                x: e.clientX + Math.random() * 100 - 50,
-                y: e.clientY + Math.random() * 100 - 50,
-            });
-        }
+    var j = 0;
+    container.addEventListener("click", function (e) {
+        setInterval(function () {
+            for (var i = 0; i < 20; i++) {
+                model[i + j].addAnimation({
+                    x: Math.random() * container.width,
+                    y: Math.random() * container.height,
+                    //opcity: Math.random() * 0.2 + 0.8,
+                    //orientation: Math.random() * 360 - 180,
+                    //scaleX: Math.random() * 1.2,
+                    //scaley: Math.random() * 1.2,
+                    duration: 1000
+                }, false);
+            }
+            j += i;
+            if (j >= modelCount) {
+                j = 0;
+            }
+        }, 500);
     });
 });
 //Math.floor(Math.random() * 100)

@@ -49,6 +49,10 @@ define([
             bufferCanvas.width = this.width;
             bufferCanvas.height = this.height;
             renderLayer.bufferCtx = bufferCanvas.getContext('2d')
+            var bufferCanvas2 = renderLayer.bufferCanvas2;
+            bufferCanvas2.width = this.width;
+            bufferCanvas2.height = this.height;
+            renderLayer.bufferCtx2 = bufferCanvas2.getContext('2d')
         },
 
         render: function (layers) {
@@ -84,7 +88,7 @@ define([
             while (i--) {
                 sum += deltaArr[i];
             }
-            if(sum > 0){
+            if (sum > 0) {
                 average = sum / deltaArr.length;
                 var fps = Math.floor(1000 / average);
                 var ctx = this.fpsCtx;

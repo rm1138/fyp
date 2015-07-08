@@ -14,11 +14,13 @@ define([
 
         this.canvas = document.createElement("canvas");
         this.bufferCanvas = document.createElement("canvas");
+        this.bufferCanvas2 = document.createElement('canvas');
+
         this.width = 0;
         this.height = 0;
         this.ctx = null;
         this.bufferCtx = null;
-
+        this.bufferCtx2 = null;
         this.zIndex = 0;
         if (zIndex) {
             this.canvas.style.zIndex = zIndex;
@@ -28,7 +30,6 @@ define([
         this.state = enums.LayerState.stopped;
         this.sptialHashMapping = new SptailHashing(3);
         this.dirtyRegions = [];
-        this.rendering = false;
     }
 
     Layer.prototype = {
@@ -80,30 +81,28 @@ define([
             console.log("stopped");
         },
         __renderOnBuffer: function () {
-            this.rendering = true;
             if (this.state === enums.LayerState.playing) {
+
                 var sptialHashingMappig = this.sptialHashMapping;
                 var zIndexMapping = this.zIndexMapping;
                 var ctx = this.bufferCtx;
                 var renderModels = [];
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var model = zIndexMapping[i];
+
                     model.__frameDispatch();
                     if (model.isActive) {
-                        model.isActive = false;
+
                         var boxOld = Util.getBox(model.last);
                         var boxNew = Util.getBox(model.current);
-                        console.log(boxOld);
-                        console.log(boxNew);
                         this.dirtyRegions.push(boxOld);
                         this.dirtyRegions.push(boxNew);
 
                         ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
-                        ctx.globalAlpha = 0.1;
-                        ctx.fillRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
                         ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
 
                         sptialHashingMappig.updateAndSetNearModelRerender(model);
+                        model.isActive = false;
                     }
                 };
 
@@ -122,7 +121,6 @@ define([
                     this.drawModel(model.img, model.current, ctx);
                 }
             }
-            this.rendering = false;
         },
         drawModel: function (img, model, ctx) {
             ctx.globalAlpha = model.opacity;
@@ -137,23 +135,38 @@ define([
             ctx.translate(-model.x, -model.y);
         },
         __render: function () {
-            var ctx = this.ctx;
+            this.drawOnBuffer2();
+            this.drawOnCanvas();
+        },
+        drawOnBuffer2: function () {
+            var bufferCtx2 = this.bufferCtx2;
             var dirtyRegions = this.dirtyRegions;
             var i = dirtyRegions.length;
-
+            var processedHashRegions = {};
             while (i--) {
                 var dirtyRegion = dirtyRegions[i];
-                var x = dirtyRegion.x;
-                var y = dirtyRegion.y;
-                var width = dirtyRegion.width;
-                var height = dirtyRegion.height;
-                ctx.clearRect(x, y, width, height);
-                ctx.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
+                var temp = dirtyRegion.toString();
+                if (!processedHashRegions[temp]) {
+                    var x = dirtyRegion.x;
+                    var y = dirtyRegion.y;
+                    var width = dirtyRegion.width;
+                    var height = dirtyRegion.height;
+                    bufferCtx2.clearRect(x, y, width, height);
+                    try {
+                        bufferCtx2.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
+                    } catch (e) {
+                        debugger;
+                    }
+                    processedHashRegions[temp] = true;
+                }
             }
             this.dirtyRegions = [];
+        },
+        drawOnCanvas: function () {
+            var ctx = this.ctx;
+            ctx.clearRect(0, 0, this.width, this.height);
+            ctx.drawImage(this.bufferCanvas2, 0, 0);
 
-            //            ctx.clearRect(0, 0, this.width, this.height);
-            //            ctx.drawImage(this.bufferCanvas, 0, 0);
         }
     }
 

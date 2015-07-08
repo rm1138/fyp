@@ -4,7 +4,7 @@
  * only considering the t value for the range [0, 1] => [0, 1]
  */
 
-define(function () {
+define(['class/Box'], function (Box) {
     var Util = {};
 
     Util.ANIMATION_PROP_ARR = ['x', 'y', 'scaleX', 'scaleY', 'orientation', 'opacity'];
@@ -137,13 +137,12 @@ define(function () {
     Util.getBox = function getBox(obj) {
         var width = Math.abs(obj.width * obj.scaleX * Math.cos(Util.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.sin(Util.radians(obj.orientation)));
         var height = Math.abs(obj.width * obj.scaleX * Math.sin(Util.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.cos(Util.radians(obj.orientation)))
-        var result = {
-            width:  Math.ceil(width),
-            height: Math.ceil(height),
-            x: Math.floor(obj.x - width / 2),
-            y: Math.floor(obj.y - height / 2)
-        };
-
+        var result = new Box(
+            Math.floor(obj.x - width / 2),
+            Math.floor(obj.y - height / 2),
+            Math.ceil(width),
+            Math.ceil(height)
+        );
         return result;
     }
 
@@ -155,11 +154,11 @@ define(function () {
         }
         return result;
     }
-    
-    Util.simpleObjectClone = function(obj){
-        var result = {};    
-        for(var key in obj){
-            result[key] = obj[key];   
+
+    Util.simpleObjectClone = function (obj) {
+        var result = {};
+        for (var key in obj) {
+            result[key] = obj[key];
         }
         return result;
     }
