@@ -5,18 +5,13 @@ require(['lib/main'], function (Framework) {
     var fw = new Framework("myCanvas");
     document.fw = fw;
 
-    var toggleRedrawRegion = document.getElementById("toggleRedrawRegion");
-    toggleRedrawRegion.onclick = function () {
-        fw.__configShowRedrawArea = !fw.__configShowRedrawArea;
-
-    }
 
     var layer1;
     var model = [];
     layer1 = fw.createLayer("layer1");
     fw.start();
-    var modelCount = 1000;
-    var moveModelCount = 1000;
+    var modelCount = 5000;
+    var moveModelCount = 5000;
 
 
     for (var i = 0; i < modelCount - 50; i++) {

@@ -2,8 +2,9 @@ define([
         'lib/enums',
         'lib/Renderer',
         'class/Layer',
-        'lib/AnimationManager'
-    ], function (enums, Renderer, Layer, AnimationManager) {
+        'lib/AnimationManager',
+        'lib/Util'
+    ], function (enums, Renderer, Layer, AnimationManager, Util) {
     "use strict";
     (function () {
         var lastTime = 0;
@@ -44,9 +45,27 @@ define([
         }
         this.__configShowRedrawArea = false;
         this.animationProcessTime = 0;
+        this.performance = this.__runBrowserRenderTest(canvasDomID);
     };
 
     Framework.prototype = {
+        __runBrowserRenderTest: function (canvasDomID) {
+            var dom = document.getElementById(canvasDomID);
+            var testCanvas = document.createElement('canvas');
+            testCanvas.width = dom.width;
+            testCanvas.height = dom.height;
+            var ctx = testCanvas.getContext('2d');
+            var imgs = Util.getRandomImage(100, 100);
+            var count = 0;
+            var start = new Date().getTime();
+            var now;
+            do {
+                ctx.drawImage(imgs, Math.random() * testCanvas.width, Math.random() * testCanvas.height);
+                now = new Date().getTime();
+                count += 1;
+            } while ((now - start) < 1000 / 60);
+            return count / 4;
+        },
         createLayer: function (name, zIndex) {
             var layer = new Layer(name, zIndex, this);
             this.layers.push(layer);

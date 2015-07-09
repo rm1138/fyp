@@ -40,7 +40,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
 
         Model.prototype = {
             __completeImg: function (img) {
-                this.img = this.__rasterize(img);
+                this.img = Util.rasterize(img);
                 this.current.width = img.width;
                 this.current.height = img.height;
                 this.isActive = true;
@@ -115,19 +115,6 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.last.keys = this.current.keys;
                 this.current.keys = null;
                 this.isActive = true;
-            },
-            __rasterize: function (img) {
-                var tempCanvas = document.createElement("canvas");
-                tempCanvas.width = img.width;
-                tempCanvas.height = img.height;
-                var tempCtx = tempCanvas.getContext("2d");
-                tempCtx.drawImage(img, 0, 0, img.width, img.height);
-                return this.__convertCanvasToImage(tempCanvas);
-            },
-            __convertCanvasToImage: function (canvas) {
-                var image = new Image();
-                image.src = canvas.toDataURL("image/png");
-                return image;
             }
         }
         return Model;

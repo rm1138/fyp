@@ -31,7 +31,8 @@ define([
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
         this.drawQosLimit = 10;
-        this.fps = 0;
+        this.fps = 60;
+        this.renderedModelCount = 0;
     };
 
     Renderer.prototype = {
@@ -51,10 +52,6 @@ define([
             bufferCanvas.width = this.width;
             bufferCanvas.height = this.height;
             renderLayer.bufferCtx = bufferCanvas.getContext('2d')
-            var bufferCanvas2 = renderLayer.bufferCanvas2;
-            bufferCanvas2.width = this.width;
-            bufferCanvas2.height = this.height;
-            renderLayer.bufferCtx2 = bufferCanvas2.getContext('2d')
         },
 
         render: function (layers) {
@@ -62,10 +59,10 @@ define([
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
-            if (this.fps < 30) {
-                this.drawQosLimit = Math.max(0, this.drawQosLimit - 3);
-            } else if (this.fps > 55) {
-                this.drawQosLimit = Math.min(10, this.drawQosLimit + 0.2);
+            if (delta > 1000 / 30) {
+                this.drawQosLimit = Math.max(0, this.drawQosLimit - 0.05);
+            } else if (delta < 1000 / 45) {
+                this.drawQosLimit = Math.min(10, this.drawQosLimit + 0.05);
             }
             this.renderOnCanvas(layers);
             this.renderOnBuffer(layers, this.drawQosLimit);
@@ -99,11 +96,11 @@ define([
                 average = sum / deltaArr.length;
                 this.fps = Math.floor(1000 / average);
                 var ctx = this.fpsCtx;
-                ctx.clearRect(5, 5, 400, 35);
+                ctx.clearRect(5, 5, 800, 35);
                 ctx.beginPath();
                 ctx.fillStyle = "#FF0000";
                 ctx.font = "30px Arial";
-                ctx.fillText("Avg FPS: " + this.fps + " " + Math.round(this.drawQosLimit), 10, 30);
+                ctx.fillText("Avg FPS: " + this.fps + " QoS Level: " + Math.round(this.drawQosLimit) + " Rendered Models " + this.renderedModelCount, 10, 30);
                 ctx.closePath();
             }
         }

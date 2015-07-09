@@ -14,13 +14,13 @@ define([
 
         this.canvas = document.createElement("canvas");
         this.bufferCanvas = document.createElement("canvas");
-        this.bufferCanvas2 = document.createElement('canvas');
+
 
         this.width = 0;
         this.height = 0;
         this.ctx = null;
         this.bufferCtx = null;
-        this.bufferCtx2 = null;
+
         this.zIndex = 0;
         if (zIndex) {
             this.canvas.style.zIndex = zIndex;
@@ -29,7 +29,7 @@ define([
 
         this.state = enums.LayerState.stopped;
         this.sptialHashMapping = new SptailHashing();
-        this.dirtyRegions = [];
+        this.renderRegion = null;
     }
 
     Layer.prototype = {
@@ -82,48 +82,70 @@ define([
         },
         __renderOnBuffer: function (drawQosLimit) {
             if (this.state === enums.LayerState.playing) {
-
-                var sptialHashingMappig = this.sptialHashMapping;
                 var zIndexMapping = this.zIndexMapping;
                 var ctx = this.bufferCtx;
                 var renderModels = [];
-                for (var i = 0, count = this.modelCount; i < count; i += 1) {
-                    var model = zIndexMapping[i];
-
-                    model.__frameDispatch(drawQosLimit);
-                    if (model.isActive) {
-
-                        var boxOld = Util.getBox(model.last);
-                        var boxNew = Util.getBox(model.current);
-                        this.dirtyRegions.push(boxOld);
-                        this.dirtyRegions.push(boxNew);
-
-                        ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
-                        ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
-
-                        sptialHashingMappig.updateAndSetNearModelRerender(model);
-                        model.isActive = false;
-                    }
+                var renderRegion = {
+                    x1: null,
+                    y1: null,
+                    x2: null,
+                    y2: null
                 };
-
+                //               for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
+                //                    var model = zIndexMapping[i];
+                //                    model.__frameDispatch(drawQosLimit);
+                //                    if (model.isActive) {
+                //                        model.isActive = false;
+                //                        var box = Util.getBox(model.last);
+                //                        if (renderRegion.x1 === null) {
+                //                            renderRegion.x1 = box.x;
+                //                            renderRegion.y1 = box.y;
+                //                            renderRegion.x2 = box.x + box.width;
+                //                            renderRegion.y2 = box.y + box.height;
+                //                        } else {
+                //                            if (renderRegion.x1 > box.x) {
+                //                                renderRegion.x1 = box.x;
+                //                            }
+                //                            if (renderRegion.y1 > box.y) {
+                //                                renderRegion.y1 = box.y;
+                //                            }
+                //                            if (renderRegion.x2 < box.x + box.width) {
+                //                                renderRegion.x2 = box.x + box.width;
+                //                            }
+                //                            if (renderRegion.y2 < box.y + box.height) {
+                //                                renderRegion.y2 = box.y + box.height;
+                //                            }
+                //                        }
+                //
+                //                    }
+                //                };
+                //ctx.clearRect(renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1);
+                ctx.clearRect(0, 0, this.width, this.height);
 
                 for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
                     var model = zIndexMapping[i];
-                    if (model.needRender) {
+                    model.__frameDispatch(drawQosLimit);
+                    //
+                    //                    var modelBox = Util.getBox(model.last);
+                    //
+                    //                    var isOverlap = Util.isOverlap(
+                    //                        modelBox.x, modelBox.y, modelBox.width, modelBox.height,
+                    //                        renderRegion.x1, renderRegion.y1, renderRegion.x2 - renderRegion.x1, renderRegion.y2 - renderRegion.y1
+                    //                    );
+                    if (model.isActive && model.QoSLevel <= drawQosLimit) {
                         renderModels.push(model);
-                        model.needRender = false;
-
                     }
                 }
 
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
-                    this.drawModel(model.img, model.current, ctx);
+                    this.__drawModel(model.img, model.current, ctx);
                 }
+                this.fw.renderer.renderedModelCount = i;
+                this.renderRegion = renderRegion;
             }
         },
-        drawModel: function (img, model, ctx) {
-            ctx.save();
+        __drawModel: function (img, model, ctx) {
             ctx.globalAlpha = model.opacity;
             ctx.translate(model.x, model.y);
             ctx.rotate(-Util.radians(model.orientation));
@@ -131,45 +153,26 @@ define([
             ctx.drawImage(
                 img, -model.width / 2, -model.height / 2
             );
-            ctx.restore();
-            //            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-            //            ctx.rotate(Util.radians(model.orientation));
-            //            ctx.translate(-model.x, -model.y);
+            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+            ctx.rotate(Util.radians(model.orientation));
+            ctx.translate(-model.x, -model.y);
         },
         __render: function () {
-            this.drawOnBuffer2();
-            this.drawOnCanvas();
-        },
-        drawOnBuffer2: function () {
-            var bufferCanvas = this.bufferCanvas;
-            var bufferCtx2 = this.bufferCtx2;
-            var dirtyRegions = this.dirtyRegions;
-            var i = dirtyRegions.length;
-            var processedHashRegions = {};
-            while (i--) {
-                var dirtyRegion = dirtyRegions[i];
-                var temp = dirtyRegion.toString();
-                if (!processedHashRegions[temp]) {
-                    var x = dirtyRegion.x;
-                    var y = dirtyRegion.y;
-                    var width = dirtyRegion.width;
-                    var height = dirtyRegion.height;
-                    bufferCtx2.clearRect(x, y, width, height);
-                    bufferCtx2.drawImage(bufferCanvas, x, y, width, height, x, y, width, height);
-                    if (this.fw.__configShowRedrawArea) {
-                        bufferCtx2.globalAlpha = 0.1;
-                        bufferCtx2.fillRect(x, y, width, height);
-                        bufferCtx2.globalAlpha = 1;
-                    }
-                    processedHashRegions[temp] = true;
-                }
-            }
-            this.dirtyRegions = [];
-        },
-        drawOnCanvas: function () {
-            var ctx = this.ctx;
-            ctx.clearRect(0, 0, this.width, this.height);
-            ctx.drawImage(this.bufferCanvas2, 0, 0);
+//            var renderRegion = this.renderRegion;
+//            if (this.renderRegion) {
+//                var x = renderRegion.x1;
+//                var y = renderRegion.y1;
+//                var width = renderRegion.x2 - renderRegion.x1;
+//                var height = renderRegion.y2 - renderRegion.y1
+//                var ctx = this.ctx;
+//                ctx.clearRect(x, y, width, height);
+//                ctx.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
+//            }
+                        var renderRegion = this.renderRegion;
+            
+                        var ctx = this.ctx;
+                        ctx.clearRect(0, 0, this.width, this.height);
+                        ctx.drawImage(this.bufferCanvas, 0, 0);
 
         }
     }

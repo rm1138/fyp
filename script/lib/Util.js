@@ -162,5 +162,36 @@ define(['class/Box'], function (Box) {
         }
         return result;
     }
+
+    Util.rasterize = function (img) {
+        var tempCanvas = document.createElement("canvas");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        var tempCtx = tempCanvas.getContext("2d");
+        tempCtx.drawImage(img, 0, 0, img.width, img.height);
+        return Util.convertCanvasToImage(tempCanvas);
+    }
+
+    Util.convertCanvasToImage = function (canvas) {
+        var image = new Image();
+        image.src = canvas.toDataURL("image/png");
+        return image;
+    }
+
+    Util.getRandomImage = function (width, height) {
+        var data = new Uint8ClampedArray(width * height * 4);
+        for (var y = 0; y < width * 4; y++) {
+            for (var x = 0; x < height * 4; x++) {
+                data[y * width + x] = Math.random() * 0xff;
+            }
+        }
+        var testCanvas = document.createElement('canvas');
+        testCanvas.width = width;
+        testCanvas.height = height;
+        var ctx = testCanvas.getContext('2d');
+        var imageData = new ImageData(data, width, height);
+        ctx.putImageData(imageData, 0, 0);
+        return Util.convertCanvasToImage(testCanvas);
+    }
     return Util;
 });
