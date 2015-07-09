@@ -28,7 +28,7 @@ define(['lib/Util'], function (Util) {
                 if (!temp || step * temp.length < duration) {
                     this.processQueue.push(delta);
                     this.processQueue.push(easingIdx);
-                    this.processQueue.push((duration) * 10);
+                    this.processQueue.push((duration));
                     result.duration = -1;
 
                 } else {

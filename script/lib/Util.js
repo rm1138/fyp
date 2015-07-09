@@ -162,7 +162,5 @@ define(['class/Box'], function (Box) {
         }
         return result;
     }
-
-
     return Util;
 });

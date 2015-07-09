@@ -7,7 +7,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
             this.timeline = new Timeline(this);
             this.isActive = false;
             this.needRender = false;
-
+            this.QoSLevel = typeof obj.QoSLevel !== "undefined" ? obj.QoSLevel : 1;
             this.current = {
                 x: obj.x,
                 y: obj.y,
@@ -35,6 +35,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.__completeImg(obj.canvas);
             }
             this.setting = false;
+            this.skipped = false;
         };
 
         Model.prototype = {
@@ -56,8 +57,11 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.__updateFinal(options);
                 return this;
             },
-            __frameDispatch: function (step) {
+            __frameDispatch: function (drawQosLimit) {
                 var framesObj = this.timeline.__getFrame();
+                if (this.QoSLevel > drawQosLimit) {
+                    return;
+                }
 
                 if (framesObj === null) {
                     return;
@@ -81,6 +85,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
                     }
+
                     this.last.keys = this.current.keys;
                     this.current.keys = null;
                     this.isActive = true;

@@ -69,20 +69,6 @@ define(['lib/Util'], function (Util) {
                 }
             }
 
-        },
-        setToRerender: function (obj) {
-            var keys, i, j, bucket;
-            keys = this.getKeys(obj);
-            i = keys.length;
-            while (i--) {
-                bucket = this.hash[keys[i]];
-                if (typeof bucket !== "undefined") {
-                    j = bucket.length;
-                    while (j--) {
-                        bucket[j].needRender = true;
-                    }
-                }
-            }
         }
     };
 

@@ -33,10 +33,11 @@ define(['lib/Util', 'class/Animation'], function (Util, Animation) {
             if (timelapse > duration) {
                 var result = this.currentFrame;
                 this.currentFrame = null;
-                return {
-                    frames: result,
-                    startTime: this.frameStartTime
-                };
+                return this.__getFrame();
+                //                return {
+                //                    frames: result,
+                //                    startTime: this.frameStartTime
+                //                };
             }
 
             return {

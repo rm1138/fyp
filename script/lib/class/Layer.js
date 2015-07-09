@@ -28,7 +28,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(3);
+        this.sptialHashMapping = new SptailHashing();
         this.dirtyRegions = [];
     }
 
@@ -80,7 +80,7 @@ define([
             this.state = enums.LayerState.stopped;
             console.log("stopped");
         },
-        __renderOnBuffer: function () {
+        __renderOnBuffer: function (drawQosLimit) {
             if (this.state === enums.LayerState.playing) {
 
                 var sptialHashingMappig = this.sptialHashMapping;
@@ -90,7 +90,7 @@ define([
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var model = zIndexMapping[i];
 
-                    model.__frameDispatch();
+                    model.__frameDispatch(drawQosLimit);
                     if (model.isActive) {
 
                         var boxOld = Util.getBox(model.last);
@@ -132,9 +132,9 @@ define([
                 img, -model.width / 2, -model.height / 2
             );
             ctx.restore();
-//            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-  //            ctx.rotate(Util.radians(model.orientation));
-  //            ctx.translate(-model.x, -model.y);
+            //            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+            //            ctx.rotate(Util.radians(model.orientation));
+            //            ctx.translate(-model.x, -model.y);
         },
         __render: function () {
             this.drawOnBuffer2();

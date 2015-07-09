@@ -30,6 +30,8 @@ define([
         this.container.appendChild(this.fpsCanvas);
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
+        this.drawQosLimit = 10;
+        this.fps = 0;
     };
 
     Renderer.prototype = {
@@ -60,10 +62,15 @@ define([
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
+            if (this.fps < 30) {
+                this.drawQosLimit = Math.max(0, this.drawQosLimit - 3);
+            } else if (this.fps > 55) {
+                this.drawQosLimit = Math.min(10, this.drawQosLimit + 0.2);
+            }
             this.renderOnCanvas(layers);
-            this.renderOnBuffer(layers);
+            this.renderOnBuffer(layers, this.drawQosLimit);
             this.delta.push(delta);
-            if (this.delta.length > 100) {
+            if (this.delta.length > 30) {
                 this.delta.shift();
             }
         },
@@ -74,10 +81,10 @@ define([
             }
             this.renderFrameCount();
         },
-        renderOnBuffer: function (layers) {
+        renderOnBuffer: function (layers, drawQosLimit) {
             var i = layers.length;
             while (i--) {
-                layers[i].__renderOnBuffer();
+                layers[i].__renderOnBuffer(drawQosLimit);
             }
         },
         renderFrameCount: function () {
@@ -90,13 +97,13 @@ define([
             }
             if (sum > 0) {
                 average = sum / deltaArr.length;
-                var fps = Math.floor(1000 / average);
+                this.fps = Math.floor(1000 / average);
                 var ctx = this.fpsCtx;
-                ctx.clearRect(5, 5, 200, 35);
+                ctx.clearRect(5, 5, 400, 35);
                 ctx.beginPath();
                 ctx.fillStyle = "#FF0000";
                 ctx.font = "30px Arial";
-                ctx.fillText("Avg FPS: " + fps, 10, 30);
+                ctx.fillText("Avg FPS: " + this.fps + " " + Math.round(this.drawQosLimit), 10, 30);
                 ctx.closePath();
             }
         }
