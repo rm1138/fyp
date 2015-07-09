@@ -123,6 +123,7 @@ define([
             }
         },
         drawModel: function (img, model, ctx) {
+            ctx.save();
             ctx.globalAlpha = model.opacity;
             ctx.translate(model.x, model.y);
             ctx.rotate(-Util.radians(model.orientation));
@@ -130,15 +131,17 @@ define([
             ctx.drawImage(
                 img, -model.width / 2, -model.height / 2
             );
-            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-            ctx.rotate(Util.radians(model.orientation));
-            ctx.translate(-model.x, -model.y);
+            ctx.restore();
+//            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+  //            ctx.rotate(Util.radians(model.orientation));
+  //            ctx.translate(-model.x, -model.y);
         },
         __render: function () {
             this.drawOnBuffer2();
             this.drawOnCanvas();
         },
         drawOnBuffer2: function () {
+            var bufferCanvas = this.bufferCanvas;
             var bufferCtx2 = this.bufferCtx2;
             var dirtyRegions = this.dirtyRegions;
             var i = dirtyRegions.length;
@@ -152,10 +155,11 @@ define([
                     var width = dirtyRegion.width;
                     var height = dirtyRegion.height;
                     bufferCtx2.clearRect(x, y, width, height);
-                    try {
-                        bufferCtx2.drawImage(this.bufferCanvas, x, y, width, height, x, y, width, height);
-                    } catch (e) {
-                        debugger;
+                    bufferCtx2.drawImage(bufferCanvas, x, y, width, height, x, y, width, height);
+                    if (this.fw.__configShowRedrawArea) {
+                        bufferCtx2.globalAlpha = 0.1;
+                        bufferCtx2.fillRect(x, y, width, height);
+                        bufferCtx2.globalAlpha = 1;
                     }
                     processedHashRegions[temp] = true;
                 }

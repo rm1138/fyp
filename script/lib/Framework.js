@@ -42,7 +42,7 @@ define([
             console.log("DOM Element not found");
             return undefined;
         }
-
+        this.__configShowRedrawArea = false;
         this.animationProcessTime = 0;
     };
 
