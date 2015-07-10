@@ -41,46 +41,45 @@ require(['lib/main'], function (Framework) {
             fw.__configRenderDeadline = parseFloat(val);
         }
     }
+    var download = document.getElementById('download');
+    download.onclick = downloadCSV;
 
+    function downloadCSV() {
+        fw.renderer.getResult();
+    }
     var layer = fw.createLayer("layer1");
     var model = [];
-    var modelCount = 1000;
-
-    for (var i = 0; i < modelCount - 50; i++) {
+    var modelCount = 500;
+    var imageName = ['500', '450', '400', '350', '300', '250', '200', '150', '100', '50'];
+    for (var i = 0; i < modelCount; i++) {
+        var index = i % 10;
         model[i] = layer.addModel({
             type: "image",
             x: Math.random() * container.width,
             y: Math.random() * container.height,
             name: "model" + i,
-            opacity: 0.3,
-            url: "img/square.svg",
-            QoSLevel: 1 + Math.round(Math.random() * 10)
+            url: "img/" + imageName[index] + ".png",
+            QoSLevel: index
         });
     }
 
-    for (; i < modelCount; i++) {
-        model[i] = layer.addModel({
-            type: "image",
-            x: Math.random() * container.width,
-            y: Math.random() * container.height,
-            name: "model" + i,
-            url: "img/sensei.png",
-            QoSLevel: 0
-        });
 
-    }
     fw.start();
     layer.play();
     container.addEventListener('click', function () {
-
-
+        fw.renderer.delta = [];
+        fw.renderer.renderedModel = [];
+        fw.renderer.skippedModel = [];
         for (var i = 0; i < modelCount; i++) {
             model[i].addAnimation({
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
-                duration: 10000
+                duration: 3000
             }, false);
         }
+        setTimeout(function () {
+            downloadCSV();
+        }, 3000);
     });
 
 });

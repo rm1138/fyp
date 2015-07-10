@@ -37,8 +37,6 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     that.__completeImg(this);
                 };
             }
-
-
         };
 
         Model.prototype = {
@@ -58,7 +56,8 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 return this;
             },
             __frameDispatch: function (frameStartTime, drawQosLimit, deadline) {
-                var framesObj = this.timeline.__getFrame();
+                var animationObj = this.timeline.__getAnimation();
+  
                 var box = Util.getBox(this.current);
                 if (this.skipped === 0) {
                     if (this.QoSLevel > drawQosLimit) {
@@ -69,27 +68,21 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     return;
                 }
                 this.skipped = 0;
-                if (framesObj === null) {
+                if (animationObj === null) {
                     return;
                 } else {
-                    var frames = framesObj.frames;
-                    var timelapse = new Date().getTime() - framesObj.startTime;
+                    var animation = animationObj.animation;
+                    var from = animation.from;
+                    var to = animation.to;
+                    var easingFunction = Util.EasingFunctions[animation.easing];
+                    var timelapse = (new Date().getTime() - animationObj.startTime)/animation.duration;;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
-                    var duration = frames.duration;
+                    var duration = animation.duration;
                     var i = animationPorp.length;
 
-                    if (timelapse <= 0) {
-                        this.base = Util.simpleObjectClone(this.current);
-                        timelapse = 0;
-                    }
                     while (i--) {
                         var animationName = animationPorp[i];
-                        var animationFrame = frames[animationName];
-                        var frameIndex = Math.round(timelapse * (animationFrame.length - 1) / duration);
-                        if (frameIndex >= animationFrame.length) {
-                            frameIndex = animationFrame.length - 1;
-                        }
-                        var value = this.base[animationName] + animationFrame[frameIndex];
+                        var value = Util.valueProjection(from[animationName], to[animationName],timelapse, easingFunction); 
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
                     }

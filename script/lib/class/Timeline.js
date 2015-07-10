@@ -1,9 +1,8 @@
 define(['lib/Util', 'class/Animation'], function (Util, Animation) {
     var Timeline = function (model) {
         this.animationQueue = [];
-        this.currentFrame = null;
-        this.frameStartTime = 0;
-        this.framesQueue = [];
+        this.currentAnimation = null;
+        this.animationStartTime = 0;
         this.model = model;
     };
 
@@ -16,38 +15,28 @@ define(['lib/Util', 'class/Animation'], function (Util, Animation) {
             } else {
                 var animation = new Animation(this.model.current, options);
                 this.animationQueue = [animation];
-                this.framesQueue = [];
-                this.currentFrame = null;
+                this.currentAnimation = null;
             }
         },
-        __getFrame: function () {
-            if (this.currentFrame === null) {
-                if (this.framesQueue.length === 0) {
+        __getAnimation: function () {
+            if (this.currentAnimation === null) {
+                if (this.animationQueue.length === 0) {
                     return null;
                 }
-                this.currentFrame = this.framesQueue.shift();
-                this.frameStartTime = new Date().getTime();
+                this.currentAnimation = this.animationQueue.shift();
+                this.animationStartTime = new Date().getTime();
             }
-            var duration = this.currentFrame.duration;
-            var timelapse = new Date().getTime() - this.frameStartTime;
+            var duration = this.currentAnimation.duration;
+            var timelapse = new Date().getTime() - this.animationStartTime;
             if (timelapse > duration) {
-                this.currentFrame = null;
-                return this.__getFrame();
+                this.currentAnimation = null;
+                return this.__getAnimation();
             }
 
             return {
-                frames: this.currentFrame,
-                startTime: this.frameStartTime
+                animation: this.currentAnimation,
+                startTime: this.animationStartTime
             };
-        },
-        __getFirstAnimation: function () {
-            return this.animationQueue[0];
-        },
-        __removeFirstAnimation: function () {
-            this.animationQueue.shift();
-        },
-        __addFrames: function (frames) {
-            this.framesQueue.push(frames);
         }
     };
 

@@ -38,7 +38,7 @@ define([
         this.requestId = 0;
         this.renderer = new Renderer(canvasDomID, this);
         this.layers = [];
-        this.animationManager = new AnimationManager(this);
+        //this.animationManager = new AnimationManager(this);
         if (this.renderer === null) {
             console.log("DOM Element not found");
             return undefined;
@@ -100,11 +100,11 @@ define([
                     that.__ticking();
                 });
                 this.renderer.render(layers);
-                var now = new Date().getTime();
-                if (now - this.animationProcessTime > 200) {
-                    this.animationManager.processAnimation();
-                    this.animationProcessTime = now;
-                }
+//                var now = new Date().getTime();
+//                if (now - this.animationProcessTime > 200) {
+//                    this.animationManager.processAnimation();
+//                    this.animationProcessTime = now;
+//                }
             }
         }
     };

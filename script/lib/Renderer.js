@@ -30,6 +30,7 @@ define([
         this.container.appendChild(this.fpsCanvas);
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
+        this.deltaFPS = [];
         this.renderedModel = [];
         this.skippedModel = [];
         this.drawQoSLimit = 10;
@@ -65,9 +66,9 @@ define([
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
             if (this.fw.__configIsQoSEnable) {
-                if (delta > 1000 / 30) {
+                if (this.fps < 30) {
                     this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
-                } else if (delta < 1000 / 55) {
+                } else if (this.fps > 55) {
                     this.drawQoSLimit = this.drawQoSLimit + 1;
                 }
                 this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
@@ -77,8 +78,9 @@ define([
             this.renderOnCanvas(layers);
             this.renderOnBuffer(layers, this.drawQoSLimit);
             this.delta.push(delta);
-            if (this.delta.length > 300) {
-                //this.delta.shift();
+            this.deltaFPS.push(delta);
+            if (this.deltaFPS.length > 300) {
+                this.deltaFPS.shift();
             }
         },
         renderOnCanvas: function (layers) {
@@ -97,7 +99,7 @@ define([
         renderFrameCount: function () {
             var average,
                 sum = 0,
-                deltaArr = this.delta,
+                deltaArr = this.deltaFPS,
                 i = deltaArr.length;
             while (i--) {
                 sum += deltaArr[i];
@@ -110,10 +112,28 @@ define([
                 ctx.beginPath();
                 ctx.fillStyle = "#FF0000";
                 ctx.font = "30px Arial";
-                ctx.fillText("Avg FPS: " + this.fps + " QoS Level " + Math.round(this.drawQoSLimit) +
-                    " Rendered " + this.renderedModel.shift() + " Skipped " + this.skippedModel.shift(), 10, 30);
+                ctx.fillText("Avg FPS: " + this.fps + " QoS Level " + Math.round(this.drawQoSLimit), 10, 30);
                 ctx.closePath();
             }
+        },
+        getResult: function () {
+            var csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += 'delta, skipped, rendered\n';
+            while (this.delta.length > 0 && this.skippedModel.length > 0 && this.renderedModel.length > 0) {
+                var delta = this.delta.shift();
+                var skipped = this.skippedModel.shift();
+                var rendered = this.renderedModel.shift();
+                csvContent += delta + ',' + skipped + ',' + rendered + '\n';
+            }
+            var nameStr = this.fw.__configIsQoSEnable.toString() + this.fw.__configIsUseSpatialHashing.toString() + this.fw.__configRenderDeadline.toString();
+            this.delta = [];
+            this.skippedModel = [];
+            this.renderedModel = [];
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", nameStr + ".csv");
+            link.click();
         }
     };
 

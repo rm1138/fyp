@@ -7,7 +7,7 @@ define([
 
     var Layer = Layer || function (name, zIndex, fw) {
         this.fw = fw;
-        this.animationManager = fw.animationManager;
+        //this.animationManager = fw.animationManager;
         this.name = name;
         this.modelCount = 0;
         this.zIndexMapping = [];
@@ -42,7 +42,7 @@ define([
             } else {
                 this.zIndexMapping.push(model);
             }
-            this.animationManager.addModel(model);
+            // this.animationManager.addModel(model);
             this.modelCount += 1;
             return model;
         },
@@ -57,13 +57,13 @@ define([
                 index = this.zIndexNameMapping.indexOf(arg);
             }
             var model = this.zIndexNameMapping[index];
-            this.animationManager.removeModel(this.zIndexNameMapping[index]);
+            //this.animationManager.removeModel(this.zIndexNameMapping[index]);
             this.sptialHashMapping.removeAndSetNearModelRerender(this.zIndexNameMapping[index]);
             this.zIndexNameMapping.splice(index, 1);
             this.modelCount -= 1;
         },
         getModel: function (name) {
-            return this.animationManager.getModel(name);
+            //return this.animationManager.getModel(name);
         },
         setZIndex: function (zIndex) {
             this.zIndex = zIndex;
