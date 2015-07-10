@@ -6,16 +6,31 @@ require(['lib/main'], function (Framework) {
     document.fw = fw;
 
     var toggleRedrawRegion = document.getElementById("toggleRedrawRegion");
-    toggleRedrawRegion.onclick = function () {
+    toggleRedrawRegion.onclick = function (e) {
         fw.__configShowRedrawArea = !fw.__configShowRedrawArea;
+        if (fw.__configShowRedrawArea) {
+            e.target.innerHTML = "Disable Redraw Region";
+        } else {
+            e.target.innerHTML = "Enable Redraw Region";
+        }
     }
     var toggleQoS = document.getElementById('QoS');
-    toggleQoS.onclick = function () {
+    toggleQoS.onclick = function (e) {
         fw.__configIsQoSEnable = !fw.__configIsQoSEnable;
+        if (fw.__configIsQoSEnable) {
+            e.target.innerHTML = "Disable QoS";
+        } else {
+            e.target.innerHTML = "Enable QoS";
+        }
     }
     var toggleSpatialHashing = document.getElementById('SpatialHashing');
-    toggleSpatialHashing.onclick = function () {
+    toggleSpatialHashing.onclick = function (e) {
         fw.__configIsUseSpatialHashing = !fw.__configIsUseSpatialHashing;
+        if (fw.__configIsUseSpatialHashing) {
+            e.target.innerHTML = "Disable Spatial Hashing";
+        } else {
+            e.target.innerHTML = "Enable Spatial Hashing";
+        }
     }
     var deadline = document.getElementById('deadline');
     deadline.onchange = function (e) {
@@ -27,16 +42,12 @@ require(['lib/main'], function (Framework) {
         }
     }
 
-    var layer1;
+    var layer = fw.createLayer("layer1");
     var model = [];
-    layer1 = fw.createLayer("layer1");
-
-    var modelCount = 100;
-    var moveModelCount = 100;
-
+    var modelCount = 1000;
 
     for (var i = 0; i < modelCount - 50; i++) {
-        model[i] = layer1.addModel({
+        model[i] = layer.addModel({
             type: "image",
             x: Math.random() * container.width,
             y: Math.random() * container.height,
@@ -48,7 +59,7 @@ require(['lib/main'], function (Framework) {
     }
 
     for (; i < modelCount; i++) {
-        model[i] = layer1.addModel({
+        model[i] = layer.addModel({
             type: "image",
             x: Math.random() * container.width,
             y: Math.random() * container.height,
@@ -58,28 +69,18 @@ require(['lib/main'], function (Framework) {
         });
 
     }
-
+    fw.start();
+    layer.play();
     container.addEventListener('click', function () {
-        fw.start();
-        layer1.play();
 
-        setTimeout(function () {
-            for (var i = 0; i < modelCount; i++) {
-                model[i].addAnimation({
-                    x: Math.random() * container.width,
-                    y: Math.random() * container.height,
-                    duration: 1000
-                }, true);
-            }
 
-        }, 1000);
-        setTimeout(function () {
-            layer1.stop();
-            fw.pause();
-            var deltaArr = fw.renderer.delta;
-            var str = deltaArr.join(',');
-            var csvContent = "data:text/csv;charset=utf-8,";
-        }, 22000);
+        for (var i = 0; i < modelCount; i++) {
+            model[i].addAnimation({
+                x: Math.random() * container.width,
+                y: Math.random() * container.height,
+                duration: 10000
+            }, false);
+        }
     });
 
 });

@@ -1,5 +1,5 @@
 define(['lib/Util'], function (Util) {
-    var Animation = Animation || function (model, animation) {
+    var Animation = function (model, animation) {
         this.from = {
             x: model.x,
             y: model.y,
@@ -19,10 +19,6 @@ define(['lib/Util'], function (Util) {
         //pre-format the easing function
         this.easing = Util.EasingFunctions[animation.easing] ? animation.easing : "linear";
         this.duration = animation.duration;
-        
-    }
-
-    Animation.prototype = {
 
     }
 

@@ -30,8 +30,10 @@ define([
         this.container.appendChild(this.fpsCanvas);
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
+        this.renderedModel = [];
+        this.skippedModel = [];
         this.drawQoSLimit = 10;
-        this.drawQoSMax = 10 * this.width * this.height >> 5;
+        this.drawQoSMax = 10;
         this.fps = 0;
     };
 
@@ -63,12 +65,12 @@ define([
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
             if (this.fw.__configIsQoSEnable) {
-                this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
                 if (delta > 1000 / 30) {
-                    this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 10000);
+                    this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
                 } else if (delta < 1000 / 55) {
-                    this.drawQoSLimit = this.drawQoSLimit + 50;
+                    this.drawQoSLimit = this.drawQoSLimit + 1;
                 }
+                this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
             } else {
                 this.drawQoSLimit = Number.POSITIVE_INFINITY;
             }
@@ -104,11 +106,12 @@ define([
                 average = sum / deltaArr.length;
                 this.fps = Math.floor(1000 / average);
                 var ctx = this.fpsCtx;
-                ctx.clearRect(5, 5, 400, 35);
+                ctx.clearRect(5, 5, 1400, 35);
                 ctx.beginPath();
                 ctx.fillStyle = "#FF0000";
                 ctx.font = "30px Arial";
-                ctx.fillText("Avg FPS: " + this.fps + " " + Math.round(this.drawQoSLimit), 10, 30);
+                ctx.fillText("Avg FPS: " + this.fps + " QoS Level " + Math.round(this.drawQoSLimit) +
+                    " Rendered " + this.renderedModel.shift() + " Skipped " + this.skippedModel.shift(), 10, 30);
                 ctx.closePath();
             }
         }

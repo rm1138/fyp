@@ -7,7 +7,7 @@ define([
 
     var Layer = Layer || function (name, zIndex, fw) {
         this.fw = fw;
-        this.animationManager = fw.getAnimationManager();
+        this.animationManager = fw.animationManager;
         this.name = name;
         this.modelCount = 0;
         this.zIndexMapping = [];
@@ -15,12 +15,13 @@ define([
         this.canvas = document.createElement("canvas");
         this.bufferCanvas = document.createElement("canvas");
         this.bufferCanvas2 = document.createElement('canvas');
-
-        this.width = 0;
-        this.height = 0;
         this.ctx = null;
         this.bufferCtx = null;
         this.bufferCtx2 = null;
+
+        this.width = 0;
+        this.height = 0;
+
         this.zIndex = 0;
         if (zIndex) {
             this.canvas.style.zIndex = zIndex;
@@ -28,7 +29,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(3);
+        this.sptialHashMapping = new SptailHashing(8);
         this.dirtyRegions = [];
     }
 
@@ -83,6 +84,7 @@ define([
         __renderOnBuffer: function (drawQosLimit) {
             var deadline = this.fw.__configRenderDeadline;
             var spatialHashingEnable = this.fw.__configIsUseSpatialHashing;
+            var skippedModel = 0;
             if (this.state === enums.LayerState.playing) {
                 var frameStartTime = new Date().getTime();
                 var sptialHashingMappig = this.sptialHashMapping;
@@ -94,6 +96,9 @@ define([
                     var model = zIndexMapping[i];
 
                     model.__frameDispatch(frameStartTime, drawQosLimit, deadline);
+                    if (model.skipped !== 0) {
+                        skippedModel += 1;
+                    }
                     if (model.isActive) {
 
                         var boxOld = Util.getBox(model.last);
@@ -105,10 +110,11 @@ define([
                             ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
                             sptialHashingMappig.updateAndSetNearModelRerender(model);
 
-                        } else {
-                            model.needRender = true;
                         }
                         model.isActive = false;
+                    }
+                    if (!spatialHashingEnable && model.skipped === 0) {
+                        model.needRender = true;
                     }
                 };
 
@@ -119,14 +125,16 @@ define([
                         model.needRender = false;
                     }
                 }
-                if (!spatialHashingEnable) {
-                    ctx = this.bufferCtx2;
+                if (!spatialHashingEnable && renderModels.length > 0) {
                     ctx.clearRect(0, 0, this.width, this.height);
                 }
+
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
                     this.drawModel(model.img, model.current, ctx);
                 }
+                this.fw.renderer.skippedModel.push(skippedModel);
+                this.fw.renderer.renderedModel.push(i);
             }
         },
         drawModel: function (img, model, ctx) {
@@ -144,32 +152,28 @@ define([
         },
         __render: function () {
             if (this.fw.__configIsUseSpatialHashing) {
-                this.drawOnBuffer2();
+                this.drawOnCanvasHashing();
+            } else {
+                this.drawOnCanvas();
             }
-            this.drawOnCanvas();
         },
-        drawOnBuffer2: function () {
+        drawOnCanvasHashing: function () {
             var bufferCanvas = this.bufferCanvas;
-            var bufferCtx2 = this.bufferCtx2;
+            var ctx = this.ctx;
             var dirtyRegions = this.dirtyRegions;
             var i = dirtyRegions.length;
-            var processedHashRegions = {};
             while (i--) {
                 var dirtyRegion = dirtyRegions[i];
-                var temp = dirtyRegion.toString();
-                if (!processedHashRegions[temp]) {
-                    var x = dirtyRegion.x;
-                    var y = dirtyRegion.y;
-                    var width = dirtyRegion.width;
-                    var height = dirtyRegion.height;
-                    bufferCtx2.clearRect(x, y, width, height);
-                    bufferCtx2.drawImage(bufferCanvas, x, y, width, height, x, y, width, height);
-                    if (this.fw.__configShowRedrawArea) {
-                        bufferCtx2.globalAlpha = 0.1;
-                        bufferCtx2.fillRect(x, y, width, height);
-                        bufferCtx2.globalAlpha = 1;
-                    }
-                    processedHashRegions[temp] = true;
+                var x = dirtyRegion.x;
+                var y = dirtyRegion.y;
+                var width = dirtyRegion.width;
+                var height = dirtyRegion.height;
+                ctx.clearRect(x, y, width, height);
+                ctx.drawImage(bufferCanvas, x, y, width, height, x, y, width, height);
+                if (this.fw.__configShowRedrawArea) {
+                    ctx.globalAlpha = 0.1;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.globalAlpha = 1;
                 }
             }
             this.dirtyRegions = [];
@@ -177,7 +181,7 @@ define([
         drawOnCanvas: function () {
             var ctx = this.ctx;
             ctx.clearRect(0, 0, this.width, this.height);
-            ctx.drawImage(this.bufferCanvas2, 0, 0);
+            ctx.drawImage(this.bufferCanvas, 0, 0);
         }
     }
 

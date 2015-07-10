@@ -7,16 +7,6 @@ define(['lib/Util'], function (Util) {
 
         this.roundingLimit = 10;
         this.decimalPlaces = 2;
-        for (var i = -1000; i <= 1000; i++) {
-            this.processQueue.push(i / 100);
-            this.processQueue.push(0);
-            this.processQueue.push(20000);
-        }
-        for (var i = -2000; i <= 2000; i++) {
-            this.processQueue.push(i);
-            this.processQueue.push(0);
-            this.processQueue.push(20000);
-        }
     };
 
     AnimationHashMap.prototype = {
@@ -37,14 +27,11 @@ define(['lib/Util'], function (Util) {
                 if (!temp || step * temp.length < duration) {
                     this.processQueue.push(delta);
                     this.processQueue.push(easingIdx);
-                    this.processQueue.push((duration) * 10);
+                    this.processQueue.push((duration));
                     result.duration = -1;
-
                 } else {
-
                     result[animationPorp] = temp;
                 }
-
             }
             return result;
         },
@@ -55,7 +42,6 @@ define(['lib/Util'], function (Util) {
         },
         formatDelta: function (delta) {
             var roundingLimit = this.roundingLimit;
-            //delta = Math.abs(delta);
             if (delta > roundingLimit || delta < -roundingLimit) {
                 delta = Math.round(delta);
             } else {

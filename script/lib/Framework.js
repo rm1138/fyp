@@ -106,12 +106,6 @@ define([
                     this.animationProcessTime = now;
                 }
             }
-        },
-        getAnimationManager: function () {
-            return this.animationManager;
-        },
-        getRenderer: function () {
-            return this.renderer;
         }
     };
     return Framework;

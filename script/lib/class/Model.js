@@ -1,13 +1,19 @@
 define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
     function (enums, Animation, Util, Timeline) {
         var Model = function (obj, layer) {
+
             var that = this;
             this.layer = layer;
             this.name = obj.name;
+
             this.timeline = new Timeline(this);
+
             this.isActive = false;
             this.needRender = false;
+
             this.QoSLevel = typeof obj.QoSLevel !== "undefined" ? obj.QoSLevel : 5;
+            this.skipped = 0;
+
             this.current = {
                 x: obj.x,
                 y: obj.y,
@@ -30,17 +36,14 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 img.onload = function () {
                     that.__completeImg(this);
                 };
-            } else if (obj.type === "canvas") {
-                this.type = enums.ModelType.Canvas;
-                this.__completeImg(obj.canvas);
             }
-            this.setting = false;
-            this.skipped = 0;
+
+
         };
 
         Model.prototype = {
             __completeImg: function (img) {
-                this.img = this.__rasterize(img);
+                this.img = Util.rasterize(img);
                 this.current.width = img.width;
                 this.current.height = img.height;
                 this.isActive = true;
@@ -48,9 +51,6 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.last = Util.simpleObjectClone(this.current);
                 this.base = Util.simpleObjectClone(this.current);
                 this.final = Util.simpleObjectClone(this.current);
-            },
-            __update: function (options) {
-                this.pendingValue = options;
             },
             addAnimation: function (options, append) {
                 this.timeline.__addAnimation(options, append);
@@ -60,23 +60,20 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
             __frameDispatch: function (frameStartTime, drawQosLimit, deadline) {
                 var framesObj = this.timeline.__getFrame();
                 var box = Util.getBox(this.current);
-                var now = new Date().getTime();
                 if (this.skipped === 0) {
-                    var QoS = this.QoSLevel * ((box.width * box.height) >> 5);
-                    if (this.QoSLevel * box.width * box.height > drawQosLimit) {
-                        this.skipped = now;
+                    if (this.QoSLevel > drawQosLimit) {
+                        this.skipped = frameStartTime;
                         return;
                     }
-                } else if (now - this.skipped < deadline) {
+                } else if (frameStartTime - this.skipped < deadline) {
                     return;
                 }
-
                 this.skipped = 0;
                 if (framesObj === null) {
                     return;
                 } else {
                     var frames = framesObj.frames;
-                    var timelapse = frameStartTime - framesObj.startTime;
+                    var timelapse = new Date().getTime() - framesObj.startTime;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
                     var duration = frames.duration;
                     var i = animationPorp.length;
@@ -87,17 +84,20 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     }
                     while (i--) {
                         var animationName = animationPorp[i];
-                        var frameIndex = Math.round(timelapse * (frames[animationName].length - 1) / duration);
-                        if (frameIndex >= frames[animationName].length) {
-                            frameIndex = frames[animationName].length - 1;
+                        var animationFrame = frames[animationName];
+                        var frameIndex = Math.round(timelapse * (animationFrame.length - 1) / duration);
+                        if (frameIndex >= animationFrame.length) {
+                            frameIndex = animationFrame.length - 1;
                         }
-                        var value = this.base[animationName] + frames[animationName][frameIndex];
+                        var value = this.base[animationName] + animationFrame[frameIndex];
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
                     }
 
                     this.last.keys = this.current.keys;
+                    this.last.box = this.current.box;
                     this.current.keys = null;
+                    this.current.box = null;
                     this.isActive = true;
                 }
             },
@@ -125,19 +125,6 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.last.keys = this.current.keys;
                 this.current.keys = null;
                 this.isActive = true;
-            },
-            __rasterize: function (img) {
-                var tempCanvas = document.createElement("canvas");
-                tempCanvas.width = img.width;
-                tempCanvas.height = img.height;
-                var tempCtx = tempCanvas.getContext("2d");
-                tempCtx.drawImage(img, 0, 0, img.width, img.height);
-                return this.__convertCanvasToImage(tempCanvas);
-            },
-            __convertCanvasToImage: function (canvas) {
-                var image = new Image();
-                image.src = canvas.toDataURL("image/png");
-                return image;
             }
         }
         return Model;

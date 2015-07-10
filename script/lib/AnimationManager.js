@@ -100,10 +100,8 @@ define(['lib/enums', 'lib/Util', 'lib/AnimationHashMap'], function (enums, Util,
                 animationHashMap.addFrames(delta, easingIdx, animationFrames);
                 start = end;
             }
-            console.log("done");
         }
     }
 
     return AnimationManager;
 });
-//Util.animationsToTypedFloat32Array(animations.slice(i * animationPerWorker, (i + 1) * animationPerWorker)),

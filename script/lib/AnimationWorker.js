@@ -1,5 +1,4 @@
 importScripts("../external/require.js");
-var functionContainer = {};
 
 require(["enums", "Util"], function (enums, Util) {
 
