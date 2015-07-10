@@ -7,7 +7,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
             this.timeline = new Timeline(this);
             this.isActive = false;
             this.needRender = false;
-            this.QoSLevel = typeof obj.QoSLevel !== "undefined" ? obj.QoSLevel : 1;
+            this.QoSLevel = typeof obj.QoSLevel !== "undefined" ? obj.QoSLevel : 5;
             this.current = {
                 x: obj.x,
                 y: obj.y,
@@ -35,7 +35,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.__completeImg(obj.canvas);
             }
             this.setting = false;
-            this.skipped = false;
+            this.skipped = 0;
         };
 
         Model.prototype = {
@@ -57,23 +57,33 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 this.__updateFinal(options);
                 return this;
             },
-            __frameDispatch: function (drawQosLimit) {
+            __frameDispatch: function (frameStartTime, drawQosLimit, deadline) {
                 var framesObj = this.timeline.__getFrame();
-                if (this.QoSLevel > drawQosLimit) {
+                var box = Util.getBox(this.current);
+                var now = new Date().getTime();
+                if (this.skipped === 0) {
+                    var QoS = this.QoSLevel * ((box.width * box.height) >> 5);
+                    if (this.QoSLevel * box.width * box.height > drawQosLimit) {
+                        this.skipped = now;
+                        return;
+                    }
+                } else if (now - this.skipped < deadline) {
                     return;
                 }
 
+                this.skipped = 0;
                 if (framesObj === null) {
                     return;
                 } else {
                     var frames = framesObj.frames;
-                    var timelapse = new Date().getTime() - framesObj.startTime;
+                    var timelapse = frameStartTime - framesObj.startTime;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
                     var duration = frames.duration;
                     var i = animationPorp.length;
 
-                    if (timelapse === 0) {
+                    if (timelapse <= 0) {
                         this.base = Util.simpleObjectClone(this.current);
+                        timelapse = 0;
                     }
                     while (i--) {
                         var animationName = animationPorp[i];

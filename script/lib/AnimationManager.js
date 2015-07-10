@@ -4,7 +4,7 @@ define(['lib/enums', 'lib/Util', 'lib/AnimationHashMap'], function (enums, Util,
         this.models = [];
         this.step = Util.step; //process frame step
         this.supportWorker = false;
-        this.animationHashMap = new AnimationHashMap(this);
+        this.animationHashMap = new AnimationHashMap(fw);
         if (window.Worker) {
             this.supportWorker = true;
             this.numOfThread = navigator.hardwareConcurrency || 4;
@@ -100,9 +100,7 @@ define(['lib/enums', 'lib/Util', 'lib/AnimationHashMap'], function (enums, Util,
                 animationHashMap.addFrames(delta, easingIdx, animationFrames);
                 start = end;
             }
-        },
-        throttling: function () {
-
+            console.log("done");
         }
     }
 

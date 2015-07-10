@@ -2,8 +2,9 @@ define([
         'lib/enums',
         'lib/Renderer',
         'class/Layer',
-        'lib/AnimationManager'
-    ], function (enums, Renderer, Layer, AnimationManager) {
+        'lib/AnimationManager',
+        'lib/Util'
+    ], function (enums, Renderer, Layer, AnimationManager, Util) {
     "use strict";
     (function () {
         var lastTime = 0;
@@ -32,7 +33,7 @@ define([
     }());
 
     //constructor
-    var Framework = Framework || function (canvasDomID, readyCall) {
+    var Framework = function (canvasDomID, readyCall) {
         this.running = false;
         this.requestId = 0;
         this.renderer = new Renderer(canvasDomID, this);
@@ -43,7 +44,11 @@ define([
             return undefined;
         }
         this.__configShowRedrawArea = false;
+        this.__configRenderDeadline = 1000 / 30;
+        this.__configIsUseSpatialHashing = true;
+        this.__configIsQoSEnable = true;
         this.animationProcessTime = 0;
+        this.util = Util;
     };
 
     Framework.prototype = {
@@ -96,10 +101,8 @@ define([
                 });
                 this.renderer.render(layers);
                 var now = new Date().getTime();
-                this.animationManager.processAnimation();
-                this.animationManager.processAnimation();
-                if (now - this.animationProcessTime > 50) {
-
+                if (now - this.animationProcessTime > 200) {
+                    this.animationManager.processAnimation();
                     this.animationProcessTime = now;
                 }
             }

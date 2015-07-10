@@ -55,15 +55,21 @@ define(['lib/Util'], function (Util) {
                 i = oldKey.length,
                 j,
                 bucket;
-
+            var thisBox = Util.getBox(last);
+            model.needRender = true;
             while (i--) {
                 bucket = this.hash[oldKey[i]];
                 if (typeof bucket !== "undefined") {
                     j = bucket.length;
                     while (j--) {
-                        bucket[j].needRender = true;
-                        if (bucket[j] === model) {
+                        var targetModel = bucket[j];
+                        if (targetModel === model) {
                             bucket.splice(j, 1);
+                            continue;
+                        }
+                        var targetBox = Util.getBox(targetModel.last);
+                        if (Util.isOverlapBox(thisBox, targetBox)) {
+                            bucket[j].needRender = true;
                         }
                     }
                 }

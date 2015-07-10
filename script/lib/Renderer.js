@@ -30,7 +30,8 @@ define([
         this.container.appendChild(this.fpsCanvas);
         this.lastDrawTime = new Date().getTime();
         this.delta = [];
-        this.drawQosLimit = 10;
+        this.drawQoSLimit = 10;
+        this.drawQoSMax = 10 * this.width * this.height >> 5;
         this.fps = 0;
     };
 
@@ -50,28 +51,32 @@ define([
             var bufferCanvas = renderLayer.bufferCanvas;
             bufferCanvas.width = this.width;
             bufferCanvas.height = this.height;
-            renderLayer.bufferCtx = bufferCanvas.getContext('2d')
+            renderLayer.bufferCtx = bufferCanvas.getContext('2d');
             var bufferCanvas2 = renderLayer.bufferCanvas2;
             bufferCanvas2.width = this.width;
             bufferCanvas2.height = this.height;
-            renderLayer.bufferCtx2 = bufferCanvas2.getContext('2d')
+            renderLayer.bufferCtx2 = bufferCanvas2.getContext('2d');
         },
 
         render: function (layers) {
-
             var now = new Date().getTime();
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
-            if (this.fps < 30) {
-                this.drawQosLimit = Math.max(0, this.drawQosLimit - 3);
-            } else if (this.fps > 55) {
-                this.drawQosLimit = Math.min(10, this.drawQosLimit + 0.2);
+            if (this.fw.__configIsQoSEnable) {
+                this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
+                if (delta > 1000 / 30) {
+                    this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 10000);
+                } else if (delta < 1000 / 55) {
+                    this.drawQoSLimit = this.drawQoSLimit + 50;
+                }
+            } else {
+                this.drawQoSLimit = Number.POSITIVE_INFINITY;
             }
             this.renderOnCanvas(layers);
-            this.renderOnBuffer(layers, this.drawQosLimit);
+            this.renderOnBuffer(layers, this.drawQoSLimit);
             this.delta.push(delta);
-            if (this.delta.length > 30) {
-                this.delta.shift();
+            if (this.delta.length > 300) {
+                //this.delta.shift();
             }
         },
         renderOnCanvas: function (layers) {
@@ -81,10 +86,10 @@ define([
             }
             this.renderFrameCount();
         },
-        renderOnBuffer: function (layers, drawQosLimit) {
+        renderOnBuffer: function (layers, drawQoSLimit) {
             var i = layers.length;
             while (i--) {
-                layers[i].__renderOnBuffer(drawQosLimit);
+                layers[i].__renderOnBuffer(drawQoSLimit);
             }
         },
         renderFrameCount: function () {
@@ -103,7 +108,7 @@ define([
                 ctx.beginPath();
                 ctx.fillStyle = "#FF0000";
                 ctx.font = "30px Arial";
-                ctx.fillText("Avg FPS: " + this.fps + " " + Math.round(this.drawQosLimit), 10, 30);
+                ctx.fillText("Avg FPS: " + this.fps + " " + Math.round(this.drawQoSLimit), 10, 30);
                 ctx.closePath();
             }
         }

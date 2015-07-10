@@ -28,7 +28,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing();
+        this.sptialHashMapping = new SptailHashing(3);
         this.dirtyRegions = [];
     }
 
@@ -81,41 +81,48 @@ define([
             console.log("stopped");
         },
         __renderOnBuffer: function (drawQosLimit) {
+            var deadline = this.fw.__configRenderDeadline;
+            var spatialHashingEnable = this.fw.__configIsUseSpatialHashing;
             if (this.state === enums.LayerState.playing) {
-
+                var frameStartTime = new Date().getTime();
                 var sptialHashingMappig = this.sptialHashMapping;
                 var zIndexMapping = this.zIndexMapping;
                 var ctx = this.bufferCtx;
                 var renderModels = [];
+
                 for (var i = 0, count = this.modelCount; i < count; i += 1) {
                     var model = zIndexMapping[i];
 
-                    model.__frameDispatch(drawQosLimit);
+                    model.__frameDispatch(frameStartTime, drawQosLimit, deadline);
                     if (model.isActive) {
 
                         var boxOld = Util.getBox(model.last);
                         var boxNew = Util.getBox(model.current);
                         this.dirtyRegions.push(boxOld);
                         this.dirtyRegions.push(boxNew);
+                        if (spatialHashingEnable) {
+                            ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
+                            ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
+                            sptialHashingMappig.updateAndSetNearModelRerender(model);
 
-                        ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
-                        ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
-
-                        sptialHashingMappig.updateAndSetNearModelRerender(model);
+                        } else {
+                            model.needRender = true;
+                        }
                         model.isActive = false;
                     }
                 };
-
 
                 for (var i = 0, count = zIndexMapping.length; i < count; i += 1) {
                     var model = zIndexMapping[i];
                     if (model.needRender) {
                         renderModels.push(model);
                         model.needRender = false;
-
                     }
                 }
-
+                if (!spatialHashingEnable) {
+                    ctx = this.bufferCtx2;
+                    ctx.clearRect(0, 0, this.width, this.height);
+                }
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
                     this.drawModel(model.img, model.current, ctx);
@@ -131,13 +138,14 @@ define([
             ctx.drawImage(
                 img, -model.width / 2, -model.height / 2
             );
-            ctx.restore();
-            //            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-            //            ctx.rotate(Util.radians(model.orientation));
-            //            ctx.translate(-model.x, -model.y);
+            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+            ctx.rotate(Util.radians(model.orientation));
+            ctx.translate(-model.x, -model.y);
         },
         __render: function () {
-            this.drawOnBuffer2();
+            if (this.fw.__configIsUseSpatialHashing) {
+                this.drawOnBuffer2();
+            }
             this.drawOnCanvas();
         },
         drawOnBuffer2: function () {
@@ -170,7 +178,6 @@ define([
             var ctx = this.ctx;
             ctx.clearRect(0, 0, this.width, this.height);
             ctx.drawImage(this.bufferCanvas2, 0, 0);
-
         }
     }
 

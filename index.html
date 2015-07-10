@@ -28,12 +28,18 @@
         <button id="toggleRedrawRegion">
             Toggle Redraw region
         </button>
-        <select name="layer">
-            <option value=""></option>
-        </select>
-        <button id="addlayer">
-            Add Layer
+        <button id="QoS">
+            Toggle QoS
         </button>
+        <button id="SpatialHashing">
+            Toggle Spatial Hashing
+        </button>Deadline:
+        <select id="deadline">
+            <option value=33.333333333336>1000/30</option>
+            <option value=50>1000/20</option>
+            <option value=100>1000/10</option>
+            <option value=-1>Off</option>
+        </select>
     </div>
     <div id="myCanvas"></div>
 </body>
