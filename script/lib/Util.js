@@ -122,7 +122,7 @@ define(['class/Box'], function (Box) {
 
     Util.radians = function (degrees) {
         return degrees * Math.PI / 180;
-    }
+    };
     Util.degrees = function (radians) {
         return radians * 180 / Math.PI;
     };
@@ -131,15 +131,13 @@ define(['class/Box'], function (Box) {
         if (obj.box) {
             return obj.box;
         }
-        var width = Math.abs(obj.width * obj.scaleX * Math.cos(Util.radians(obj.orientation))) +
-            Math.abs(obj.height * obj.scaleY * Math.sin(Util.radians(obj.orientation)));
-        var height = Math.abs(obj.width * obj.scaleX * Math.sin(Util.radians(obj.orientation))) +
-            Math.abs(obj.height * obj.scaleY * Math.cos(Util.radians(obj.orientation)));
+        var width = Math.abs(obj.width * obj.scaleX * Math.cos(Util.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.sin(Util.radians(obj.orientation)));
+        var height = Math.abs(obj.width * obj.scaleX * Math.sin(Util.radians(obj.orientation))) + Math.abs(obj.height * obj.scaleY * Math.cos(Util.radians(obj.orientation)));
         var result = new Box(
             Math.floor(obj.x - width / 2),
             Math.floor(obj.y - height / 2),
-            Math.ceil(width),
-            Math.ceil(height)
+            Math.ceil(width) + 1,
+            Math.ceil(height) + 1
         );
         obj.box = result;
         return result;
@@ -167,6 +165,22 @@ define(['class/Box'], function (Box) {
         tempCanvas.height = img.height;
         var tempCtx = tempCanvas.getContext("2d");
         tempCtx.drawImage(img, 0, 0, img.width, img.height);
+        return Util.convertCanvasToImage(tempCanvas);
+    };
+
+    Util.overlay = function (img, index) {
+        var color = ["#FF6666", "#FFB266", "#FFFF66", "#B2FF66", "#66FF66",
+                     "#66FFB2", "#66FFFF", "#66B2FF", "#6666FF", "#B266FF"]
+        var tempCanvas = document.createElement("canvas");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        var tempCtx = tempCanvas.getContext("2d");
+        tempCtx.fillStyle = "#FFFFFF";
+        tempCtx.fillRect(0, 0, img.width, img.height);
+        tempCtx.drawImage(img, 0, 0, img.width, img.height);
+        tempCtx.globalAlpha = 0.5;
+        tempCtx.fillStyle = color[index];
+        tempCtx.fillRect(0, 0, img.width, img.height);
         return Util.convertCanvasToImage(tempCanvas);
     };
 

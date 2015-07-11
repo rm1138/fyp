@@ -59,6 +59,10 @@ define([
             bufferCanvas2.width = this.width;
             bufferCanvas2.height = this.height;
             renderLayer.bufferCtx2 = bufferCanvas2.getContext('2d');
+            renderLayer.bufferCtx2.mozImageSmoothingEnabled = false;
+            renderLayer.bufferCtx2.webkitImageSmoothingEnabled = false;
+            renderLayer.bufferCtx2.msImageSmoothingEnabled = false;
+            renderLayer.bufferCtx2.imageSmoothingEnabled = false;
         },
 
         render: function (layers) {
@@ -69,7 +73,7 @@ define([
                 if (this.fps < 30) {
                     this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
                 } else if (this.fps > 55) {
-                    this.drawQoSLimit = this.drawQoSLimit + 1;
+                    this.drawQoSLimit = this.drawQoSLimit + 0.2;
                 }
                 this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
             } else {
@@ -79,9 +83,6 @@ define([
             this.renderOnBuffer(layers, this.drawQoSLimit);
             this.delta.push(delta);
             this.deltaFPS.push(delta);
-            if (this.deltaFPS.length > 300) {
-                this.deltaFPS.shift();
-            }
         },
         renderOnCanvas: function (layers) {
             var i = layers.length;
@@ -115,8 +116,12 @@ define([
                 ctx.fillText("Avg FPS: " + this.fps + " QoS Level " + Math.round(this.drawQoSLimit), 10, 30);
                 ctx.closePath();
             }
+            while (sum > 1000) {
+                sum -= this.deltaFPS.shift();
+            }
         },
         getResult: function () {
+
             var csvContent = "data:text/csv;charset=utf-8,";
             csvContent += 'delta, skipped, rendered\n';
             while (this.delta.length > 0 && this.skippedModel.length > 0 && this.renderedModel.length > 0) {

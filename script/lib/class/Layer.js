@@ -100,16 +100,15 @@ define([
                         skippedModel += 1;
                     }
                     if (model.isActive) {
-
-                        var boxOld = Util.getBox(model.last);
-                        var boxNew = Util.getBox(model.current);
-                        this.dirtyRegions.push(boxOld);
-                        this.dirtyRegions.push(boxNew);
                         if (spatialHashingEnable) {
+                            var boxOld = Util.getBox(model.last);
+                            var boxNew = Util.getBox(model.current);
+
+                            this.dirtyRegions.push(boxOld);
+                            this.dirtyRegions.push(boxNew);
                             ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
                             ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
                             sptialHashingMappig.updateAndSetNearModelRerender(model);
-
                         }
                         model.isActive = false;
                     }
@@ -139,16 +138,18 @@ define([
         },
         drawModel: function (img, model, ctx) {
             ctx.save();
-            ctx.globalAlpha = model.opacity;
-            ctx.translate(model.x, model.y);
-            ctx.rotate(-Util.radians(model.orientation));
-            ctx.scale(model.scaleX, model.scaleY);
-            ctx.drawImage(
-                img, -model.width / 2, -model.height / 2
-            );
-            ctx.scale(1 / model.scaleX, 1 / model.scaleY);
-            ctx.rotate(Util.radians(model.orientation));
-            ctx.translate(-model.x, -model.y);
+            if (img) {
+                ctx.globalAlpha = model.opacity;
+                ctx.translate(model.x, model.y);
+                ctx.rotate(-Util.radians(model.orientation));
+                ctx.scale(model.scaleX, model.scaleY);
+                ctx.drawImage(
+                    img, -model.width / 2, -model.height / 2
+                );
+                ctx.scale(1 / model.scaleX, 1 / model.scaleY);
+                ctx.rotate(Util.radians(model.orientation));
+                ctx.translate(-model.x, -model.y);
+            }
         },
         __render: function () {
             if (this.fw.__configIsUseSpatialHashing) {
@@ -159,9 +160,9 @@ define([
         },
         drawOnCanvasHashing: function () {
             var bufferCanvas = this.bufferCanvas;
-            var ctx = this.ctx;
+            var ctx = this.bufferCtx2;
             var dirtyRegions = this.dirtyRegions;
-            var i = dirtyRegions.length;
+            var i = dirtyRegions.length
             while (i--) {
                 var dirtyRegion = dirtyRegions[i];
                 var x = dirtyRegion.x;
@@ -177,6 +178,9 @@ define([
                 }
             }
             this.dirtyRegions = [];
+            var ctx = this.ctx;
+            ctx.clearRect(0, 0, this.width, this.height);
+            ctx.drawImage(this.bufferCanvas2, 0, 0);
         },
         drawOnCanvas: function () {
             var ctx = this.ctx;

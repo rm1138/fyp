@@ -44,7 +44,7 @@ define([
             return undefined;
         }
         this.__configShowRedrawArea = false;
-        this.__configRenderDeadline = 1000 / 30;
+        this.__configRenderDeadline = 1000 / 25;
         this.__configIsUseSpatialHashing = true;
         this.__configIsQoSEnable = true;
         this.animationProcessTime = 0;
@@ -100,11 +100,11 @@ define([
                     that.__ticking();
                 });
                 this.renderer.render(layers);
-//                var now = new Date().getTime();
-//                if (now - this.animationProcessTime > 200) {
-//                    this.animationManager.processAnimation();
-//                    this.animationProcessTime = now;
-//                }
+                //                var now = new Date().getTime();
+                //                if (now - this.animationProcessTime > 200) {
+                //                    this.animationManager.processAnimation();
+                //                    this.animationProcessTime = now;
+                //                }
             }
         }
     };

@@ -41,7 +41,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
 
         Model.prototype = {
             __completeImg: function (img) {
-                this.img = Util.rasterize(img);
+                this.img = Util.overlay(img, this.QoSLevel);
                 this.current.width = img.width;
                 this.current.height = img.height;
                 this.isActive = true;
@@ -57,39 +57,39 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
             },
             __frameDispatch: function (frameStartTime, drawQosLimit, deadline) {
                 var animationObj = this.timeline.__getAnimation();
-  
-                var box = Util.getBox(this.current);
-                if (this.skipped === 0) {
-                    if (this.QoSLevel > drawQosLimit) {
-                        this.skipped = frameStartTime;
-                        return;
-                    }
-                } else if (frameStartTime - this.skipped < deadline) {
-                    return;
-                }
-                this.skipped = 0;
+
                 if (animationObj === null) {
+                    this.skipped = 0;
                     return;
                 } else {
+                    if (this.skipped === 0) {
+                        if (this.QoSLevel > drawQosLimit) {
+                            this.skipped = frameStartTime;
+                            return;
+                        }
+                    } else if (frameStartTime - this.skipped < deadline) {
+                        return;
+                    }
+                    this.skipped = 0;
                     var animation = animationObj.animation;
                     var from = animation.from;
                     var to = animation.to;
                     var easingFunction = Util.EasingFunctions[animation.easing];
-                    var timelapse = (new Date().getTime() - animationObj.startTime)/animation.duration;;
+                    var timelapse = (new Date().getTime() - animationObj.startTime) / animation.duration;;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
                     var duration = animation.duration;
                     var i = animationPorp.length;
 
                     while (i--) {
                         var animationName = animationPorp[i];
-                        var value = Util.valueProjection(from[animationName], to[animationName],timelapse, easingFunction); 
+                        var value = Util.valueProjection(from[animationName], to[animationName], timelapse, easingFunction);
                         this.last[animationName] = this.current[animationName];
                         this.current[animationName] = value;
                     }
 
-                    this.last.keys = this.current.keys;
+                    this.last.buckets = this.current.buckets;
                     this.last.box = this.current.box;
-                    this.current.keys = null;
+                    this.current.buckets = null;
                     this.current.box = null;
                     this.isActive = true;
                 }

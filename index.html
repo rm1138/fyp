@@ -39,15 +39,35 @@
             <option value=22.2222>1000/45</option>
             <option value=25>1000/40</option>
             <option value=28.5714>1000/35</option>
-            <option value=33.3336 selected>1000/30</option>
-            <option value=40>1000/25</option>
+            <option value=33.3336>1000/30</option>
+            <option value=40 selected>1000/25</option>
             <option value=50>1000/20</option>
             <option value=66.6667>1000/15</option>
             <option value=100>1000/10</option>
             <option value=200>1000/5</option>
             <option value=-1>Off</option>
         </select>
-        <button id="download">Download CSV</button>
+        <input type="checkbox" id="autodownload" />Auto Download
+        <button id="move">
+            Move
+        </button>
+        QoS Level:
+        <select id="QoSLevel">
+            <option value=0 selected>0</option>
+            <option value=1>1</option>
+            <option value=2>2</option>
+            <option value=3>3</option>
+            <option value=4>4</option>
+            <option value=5>5</option>
+            <option value=6>6</option>
+            <option value=7>7</option>
+            <option value=8>8</option>
+            <option value=9>9</option>
+        </select>
+        <button id="Add">
+            Add
+        </button>
+        <span id="modelCount"></span>
     </div>
     <div id="myCanvas"></div>
 </body>

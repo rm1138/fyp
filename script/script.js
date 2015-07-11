@@ -5,6 +5,14 @@ require(['lib/main'], function (Framework) {
     var fw = new Framework("myCanvas");
     document.fw = fw;
 
+    var layer = fw.createLayer("layer1");
+    var model = [];
+    var modelCount = 500;
+    var movingModel = modelCount;
+    var imageName = ['500', '450', '400', '350', '300', '250', '200', '150', '100', '50'];
+    fw.start();
+    layer.play();
+
     var toggleRedrawRegion = document.getElementById("toggleRedrawRegion");
     toggleRedrawRegion.onclick = function (e) {
         fw.__configShowRedrawArea = !fw.__configShowRedrawArea;
@@ -41,46 +49,53 @@ require(['lib/main'], function (Framework) {
             fw.__configRenderDeadline = parseFloat(val);
         }
     }
-    var download = document.getElementById('download');
-    download.onclick = downloadCSV;
 
-    function downloadCSV() {
-        fw.renderer.getResult();
-    }
-    var layer = fw.createLayer("layer1");
-    var model = [];
-    var modelCount = 500;
-    var imageName = ['500', '450', '400', '350', '300', '250', '200', '150', '100', '50'];
-    for (var i = 0; i < modelCount; i++) {
-        var index = i % 10;
-        model[i] = layer.addModel({
-            type: "image",
-            x: Math.random() * container.width,
-            y: Math.random() * container.height,
-            name: "model" + i,
-            url: "img/" + imageName[index] + ".png",
-            QoSLevel: index
-        });
-    }
-
-
-    fw.start();
-    layer.play();
-    container.addEventListener('click', function () {
+    var moveButton = document.getElementById("move");
+    moveButton.onclick = function () {
+        layer.stop();
         fw.renderer.delta = [];
         fw.renderer.renderedModel = [];
         fw.renderer.skippedModel = [];
-        for (var i = 0; i < modelCount; i++) {
-            model[i].addAnimation({
+        for (var i = 0; i < 50; i++) {
+            model[Math.floor(Math.random() * model.length)].addAnimation({
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
-                duration: 3000
+                duration: 10000
             }, false);
         }
+        layer.play();
         setTimeout(function () {
             downloadCSV();
-        }, 3000);
-    });
+        }, 10000);
+    };
+
+    var addButton = document.getElementById("Add");
+    addButton.onclick = function (e) {
+
+        var e = document.getElementById("QoSLevel");
+        var QoSLevel = parseInt(e.options[e.selectedIndex].value);
+
+        for (var i = 0; i < 50; i++) {
+            //var index = Math.round(Math.random() * 10) % 3;
+            var modelTemp = layer.addModel({
+                type: "image",
+                x: Math.random() * container.width,
+                y: Math.random() * container.height,
+                name: "model" + model.length,
+                url: "img/" + imageName[9] + ".png",
+                QoSLevel: QoSLevel
+            });
+            model.push(modelTemp);
+            document.getElementById("modelCount").innerHTML = "Model Count:" + model.length;
+        }
+    }
+
+    function downloadCSV() {
+        var dom = document.getElementById('autodownload');
+        if (dom.checked) {
+            fw.renderer.getResult();
+        }
+    }
 
 });
 //Math.floor(Math.random() * 100)
