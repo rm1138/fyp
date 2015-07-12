@@ -34,6 +34,7 @@ define([
         this.renderedModel = [];
         this.skippedModel = [];
         this.drawQoSLimit = 10;
+        this.testResult = [];
         this.drawQoSMax = 10;
         this.fps = 0;
     };
@@ -71,8 +72,8 @@ define([
             this.lastDrawTime = now;
             if (this.fw.__configIsQoSEnable) {
                 if (this.fps < 30) {
-                    this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
-                } else if (this.fps > 55) {
+                    this.drawQoSLimit = Math.max(1, this.drawQoSLimit - 3);
+                } else if (this.fps > 40) {
                     this.drawQoSLimit = this.drawQoSLimit + 0.2;
                 }
                 this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
@@ -120,24 +121,35 @@ define([
                 sum -= this.deltaFPS.shift();
             }
         },
-        getResult: function () {
-
-            var csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += 'delta, skipped, rendered\n';
-            while (this.delta.length > 0 && this.skippedModel.length > 0 && this.renderedModel.length > 0) {
-                var delta = this.delta.shift();
-                var skipped = this.skippedModel.shift();
-                var rendered = this.renderedModel.shift();
-                csvContent += delta + ',' + skipped + ',' + rendered + '\n';
-            }
-            var nameStr = this.fw.__configIsQoSEnable.toString() + this.fw.__configIsUseSpatialHashing.toString() + this.fw.__configRenderDeadline.toString();
+        newTest: function () {
+            var testName = this.fw.__configIsQoSEnable.toString() + ',' + this.fw.__configIsUseSpatialHashing.toString() + ',' + this.fw.__configRenderDeadline.toString();
+            var resultSet = [];
+            resultSet.push(this.delta);
+            resultSet.push(this.skippedModel);
+            resultSet.push(this.renderedModel);
+            this.testResult.push({
+                test: testName,
+                resultSet: resultSet
+            });
             this.delta = [];
             this.skippedModel = [];
             this.renderedModel = [];
+        },
+        getResult: function () {
+
+            var csvContent = "data:text/csv;charset=utf-8,";
+            while (this.testResult.length > 0) {
+                var resultSet = this.testResult.shift();
+                var test = resultSet.test;
+                resultSet = resultSet.resultSet;
+                csvContent += test + ",Delta," + resultSet[0].join(',') + '\n';
+                csvContent += test + ",Skipped," + resultSet[1].join(',') + '\n';
+                csvContent += test + ",Rendered," + resultSet[2].join(',') + '\n';
+            }
             var encodedUri = encodeURI(csvContent);
             var link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", nameStr + ".csv");
+            link.setAttribute("download", Date.now() + ".csv");
             link.click();
         }
     };
