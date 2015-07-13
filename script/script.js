@@ -39,17 +39,22 @@ require(['lib/main'], function (Framework) {
         } else {
             e.target.innerHTML = "Enable Spatial Hashing";
         }
+        layer.bufferCtx2.clearRect(0, 0, container.width, container.height);
+        var i = model.length;
+        while (i--) {
+            model[i].isActive = true;
+        }
     }
     var deadline = document.getElementById('deadline');
     deadline.onchange = function (e) {
-        var val = e.target.value;
-        if (val == -1) {
-            fw.__configRenderDeadline = Number.POSITIVE_INFINITY;
-        } else {
-            fw.__configRenderDeadline = parseFloat(val);
+            var val = e.target.value;
+            if (val == -1) {
+                fw.__configRenderDeadline = Number.POSITIVE_INFINITY;
+            } else {
+                fw.__configRenderDeadline = parseFloat(val);
+            }
         }
-    }
-
+        //This part is the code for adding animation
     var moveButton = document.getElementById("move");
     moveButton.onclick = function () {
         layer.stop();
@@ -57,18 +62,20 @@ require(['lib/main'], function (Framework) {
         fw.renderer.renderedModel = [];
         fw.renderer.skippedModel = [];
         for (var i = 0; i < 50; i++) {
-            model[Math.floor(Math.random() * model.length)].addAnimation({
+            var m = model[Math.floor(Math.random() * model.length)];
+            m.addAnimation({
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
                 duration: 10000
             }, false);
         }
+
         layer.play();
         setTimeout(function () {
             downloadCSV();
         }, 10000);
     };
-
+    //This is adding new model to layer
     var addButton = document.getElementById("Add");
     addButton.onclick = function (e) {
 
