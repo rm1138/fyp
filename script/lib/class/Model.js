@@ -41,7 +41,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
 
         Model.prototype = {
             __completeImg: function (img) {
-                this.img = Util.overlay(img, this.QoSLevel);
+                this.img = Util.rasterize(img);
                 this.current.width = img.width;
                 this.current.height = img.height;
                 this.isActive = true;

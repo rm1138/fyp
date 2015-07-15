@@ -11,64 +11,11 @@
             padding: 0px;
             margin: 0px;
         }
-        
-        #control {
-            height: 30px;
-            width: 100%;
-            margin: 0px;
-            padding: 0px;
-            margin: 0px;
-        }
 
     </style>
 </head>
 
 <body>
-    <div id="control">
-        <button id="toggleRedrawRegion">
-            Enable Redraw region
-        </button>
-        <button id="QoS">
-            Disable QoS
-        </button>
-        <button id="SpatialHashing">
-            Disable Spatial Hashing
-        </button>Deadline:
-        <select id="deadline">
-            <option value=20>1000/50</option>
-            <option value=22.2222>1000/45</option>
-            <option value=25>1000/40</option>
-            <option value=28.5714>1000/35</option>
-            <option value=33.3336>1000/30</option>
-            <option value=40 selected>1000/25</option>
-            <option value=50>1000/20</option>
-            <option value=66.6667>1000/15</option>
-            <option value=100>1000/10</option>
-            <option value=200>1000/5</option>
-            <option value=-1>Off</option>
-        </select>
-        <input type="checkbox" id="autodownload" />Auto Download
-        <button id="move">
-            Move
-        </button>
-        QoS Level:
-        <select id="QoSLevel">
-            <option value=0 selected>0</option>
-            <option value=1>1</option>
-            <option value=2>2</option>
-            <option value=3>3</option>
-            <option value=4>4</option>
-            <option value=5>5</option>
-            <option value=6>6</option>
-            <option value=7>7</option>
-            <option value=8>8</option>
-            <option value=9>9</option>
-        </select>
-        <button id="Add">
-            Add
-        </button>
-        <span id="modelCount"></span>
-    </div>
     <div id="myCanvas"></div>
 </body>
 <script src="script/external/require.js" data-main="script/app"></script>

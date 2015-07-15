@@ -96,24 +96,17 @@ define([
                     var model = zIndexMapping[i];
 
                     model.__frameDispatch(frameStartTime, drawQosLimit, deadline);
-                    if (model.skipped !== 0) {
-                        skippedModel += 1;
-                    }
                     if (model.isActive) {
-                        if (spatialHashingEnable) {
-                            var boxOld = Util.getBox(model.last);
-                            var boxNew = Util.getBox(model.current);
 
-                            this.dirtyRegions.push(boxOld);
-                            this.dirtyRegions.push(boxNew);
-                            ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
-                            ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
-                            sptialHashingMappig.updateAndSetNearModelRerender(model);
-                        }
+                        var boxOld = Util.getBox(model.last);
+                        var boxNew = Util.getBox(model.current);
+
+                        this.dirtyRegions.push(boxOld);
+                        this.dirtyRegions.push(boxNew);
+                        ctx.clearRect(boxOld.x, boxOld.y, boxOld.width, boxOld.height);
+                        ctx.clearRect(boxNew.x, boxNew.y, boxNew.width, boxNew.height);
+                        sptialHashingMappig.updateAndSetNearModelRerender(model);
                         model.isActive = false;
-                    }
-                    if (!spatialHashingEnable && model.skipped === 0) {
-                        model.needRender = true;
                     }
                 };
 
@@ -124,20 +117,15 @@ define([
                         model.needRender = false;
                     }
                 }
-                if (!spatialHashingEnable && renderModels.length > 0) {
-                    ctx.clearRect(0, 0, this.width, this.height);
-                }
 
                 for (var i = 0, count = renderModels.length; i < count; i += 1) {
                     var model = renderModels[i];
                     this.drawModel(model.img, model.current, ctx);
                 }
-                this.fw.renderer.skippedModel.push(skippedModel);
-                this.fw.renderer.renderedModel.push(i);
+
             }
         },
         drawModel: function (img, model, ctx) {
-            ctx.save();
             if (img) {
                 ctx.globalAlpha = model.opacity;
                 ctx.translate(model.x, model.y);
@@ -152,11 +140,7 @@ define([
             }
         },
         __render: function () {
-            if (this.fw.__configIsUseSpatialHashing) {
-                this.drawOnCanvasHashing();
-            } else {
-                this.drawOnCanvas();
-            }
+            this.drawOnCanvasHashing();
         },
         drawOnCanvasHashing: function () {
             var bufferCanvas = this.bufferCanvas;
@@ -171,21 +155,13 @@ define([
                 var height = dirtyRegion.height;
                 ctx.clearRect(x, y, width, height);
                 ctx.drawImage(bufferCanvas, x, y, width, height, x, y, width, height);
-                if (this.fw.__configShowRedrawArea) {
-                    ctx.globalAlpha = 0.1;
-                    ctx.fillRect(x, y, width, height);
-                    ctx.globalAlpha = 1;
-                }
             }
             this.dirtyRegions = [];
             var ctx = this.ctx;
-            ctx.clearRect(0, 0, this.width, this.height);
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, this.width, this.height);
             ctx.drawImage(this.bufferCanvas2, 0, 0);
-        },
-        drawOnCanvas: function () {
-            var ctx = this.ctx;
-            ctx.clearRect(0, 0, this.width, this.height);
-            ctx.drawImage(this.bufferCanvas, 0, 0);
         }
     }
 

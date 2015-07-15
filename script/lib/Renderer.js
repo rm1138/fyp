@@ -64,6 +64,10 @@ define([
             renderLayer.bufferCtx2.webkitImageSmoothingEnabled = false;
             renderLayer.bufferCtx2.msImageSmoothingEnabled = false;
             renderLayer.bufferCtx2.imageSmoothingEnabled = false;
+            renderLayer.bufferCtx.mozImageSmoothingEnabled = false;
+            renderLayer.bufferCtx.webkitImageSmoothingEnabled = false;
+            renderLayer.bufferCtx.msImageSmoothingEnabled = false;
+            renderLayer.bufferCtx.imageSmoothingEnabled = false;
         },
 
         render: function (layers) {
@@ -72,7 +76,7 @@ define([
             this.lastDrawTime = now;
             if (this.fw.__configIsQoSEnable) {
                 if (this.fps < 30) {
-                    this.drawQoSLimit = Math.max(1, this.drawQoSLimit - 3);
+                    this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
                 } else if (this.fps > 40) {
                     this.drawQoSLimit = this.drawQoSLimit + 0.2;
                 }
