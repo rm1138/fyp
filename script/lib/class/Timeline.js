@@ -14,8 +14,9 @@ define(['lib/Util', 'class/Animation'], function (Util, Animation) {
                 this.animationQueue.push(animation);
             } else {
                 var animation = new Animation(this.model.current, options);
-                this.animationQueue = [animation];
-                this.currentAnimation = null;
+                this.animationQueue = [];
+                this.currentAnimation = animation;
+                this.animationStartTime = new Date().getTime();
             }
         },
         __getAnimation: function () {

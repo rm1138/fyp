@@ -44,7 +44,7 @@ define([
             return undefined;
         }
         this.__configShowRedrawArea = false;
-        this.__configRenderDeadline = 1000 / 40;
+        this.__configRenderDeadline = Number.POSITIVE_INFINITY;
         this.__configIsUseSpatialHashing = true;
         this.__configIsQoSEnable = true;
         this.animationProcessTime = 0;

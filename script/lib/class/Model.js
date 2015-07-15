@@ -116,8 +116,11 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                 }
                 this.__updateFinal(options);
                 this.last.keys = this.current.keys;
+                this.last.box = this.current.box;
+                this.current.box = null;
                 this.current.keys = null;
                 this.isActive = true;
+                this.layer.sptialHashMapping.updateAndSetNearModelRerender(this);
             }
         }
         return Model;

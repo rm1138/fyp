@@ -75,9 +75,9 @@ define([
             var delta = now - this.lastDrawTime;
             this.lastDrawTime = now;
             if (this.fw.__configIsQoSEnable) {
-                if (this.fps < 30) {
+                if (this.fps < 40) {
                     this.drawQoSLimit = Math.max(0, this.drawQoSLimit - 3);
-                } else if (this.fps > 40) {
+                } else if (this.fps > 50) {
                     this.drawQoSLimit = this.drawQoSLimit + 0.2;
                 }
                 this.drawQoSLimit = Math.min(this.drawQoSMax, this.drawQoSLimit);
