@@ -29,7 +29,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(5);
+        this.sptialHashMapping = new SptailHashing(10);
         this.dirtyRegions = [];
     }
 

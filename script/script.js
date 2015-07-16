@@ -44,9 +44,14 @@ require(['lib/main'], function (Framework) {
             fw.__configRenderDeadline = parseFloat(val);
         }
     }
+    var moveButton = document.getElementById('move');
+    moveButton.onclick = function (e) {
+        for (var i = 0; i < 50; i++) {
+            moveBg(Math.round(Math.random() * background.length));
+        }
+    }
 
 
-    var backgroundLayer = fw.createLayer("bg");
     var layer1 = fw.createLayer("layer1");
     var spaceship;
     var background = [];
@@ -64,9 +69,9 @@ require(['lib/main'], function (Framework) {
 
     var init = function () {
 
-        for (var i = 0; i < 500; i++) {
+        for (var i = 0; i < 1000; i++) {
             var scale = Math.random() * 0.05;
-            var modelTemp = backgroundLayer.addModel({
+            var modelTemp = layer1.addModel({
                 type: "image",
                 x: Math.random() * container.width,
                 y: Math.random() * container.height,
@@ -79,7 +84,6 @@ require(['lib/main'], function (Framework) {
                 scaleY: scale,
                 QoSLevel: Math.round(Math.random() * 8) + 1
             });
-            console.log(modelTemp.QoSLevel);
             background.push(modelTemp);
         }
 
@@ -104,57 +108,54 @@ require(['lib/main'], function (Framework) {
             name: "spaceship"
         });
     }
+    var moveBg = function (i) {
+        var duration = Math.max(100, Math.random() * 20000);
+        var star = background[i];
+        var scale = Math.random() * 0.05;
+        star.addAnimation({
+            y: -20,
+            x: Math.random() * container.width,
+            scaleX: scale,
+            scaleY: scale,
+            duration: 1
+        });
+
+        star.addAnimation({
+            y: container.height + 20,
+            easing: "linear",
+            duration: duration,
+            orientation: Math.random() * 3060 - 1800
+        }, true);
+
+        //setTimeout(moveBg, duration + 100, i);
+    };
+
+    var moveAsteroid = function (i) {
+        var duration = Math.max(3000, Math.random() * 10000);
+        var asteroid = asteroids[i];
+        var scale = Math.max(1, Math.random() * 0.8 + 0.5);
+        asteroid.addAnimation({
+            y: -100,
+            x: Math.random() * container.width,
+            scaleX: scale,
+            scaleY: scale,
+            duration: 1
+        });
+        asteroid.addAnimation({
+            y: container.height + 100,
+            easing: "linear",
+            duration: duration,
+            orientation: Math.random() * 360 - 180
+        }, true);
+        setTimeout(moveAsteroid, duration + 100, i);
+    };
+
 
     var start = function () {
         fw.start();
         layer1.play();
-        backgroundLayer.play();
-        var moveBg = function (i) {
-            var duration = Math.max(100, Math.random() * 20000);
-            var star = background[i];
-            var scale = Math.random() * 0.05;
-            star.addAnimation({
-                y: -20,
-                x: Math.random() * container.width,
-                scaleX: scale,
-                scaleY: scale,
-                duration: 1
-            });
 
-            star.addAnimation({
-                y: container.height + 20,
-                easing: "linear",
-                duration: duration,
-                orientation: Math.random() * 360 - 180
-            }, true);
 
-            setTimeout(moveBg, duration + 100, i);
-        };
-
-        var moveAsteroid = function (i) {
-            var duration = Math.max(3000, Math.random() * 10000);
-            var asteroid = asteroids[i];
-            var scale = Math.max(1, Math.random() * 0.8 + 0.5);
-            asteroid.addAnimation({
-                y: -100,
-                x: Math.random() * container.width,
-                scaleX: scale,
-                scaleY: scale,
-                duration: 1
-            });
-            asteroid.addAnimation({
-                y: container.height + 100,
-                easing: "linear",
-                duration: duration,
-                orientation: Math.random() * 360 - 180
-            }, true);
-            setTimeout(moveAsteroid, duration + 100, i);
-        };
-        for (var i = 0; i < background.length; i++) {
-            if (Math.random() > 0.5) {
-                moveBg(i);
-            }
-        }
 
         for (var i = 0; i < asteroids.length; i++) {
             moveAsteroid(i);
