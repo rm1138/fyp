@@ -29,7 +29,7 @@ define([
         }
 
         this.state = enums.LayerState.stopped;
-        this.sptialHashMapping = new SptailHashing(5);
+        this.sptialHashMapping = new SptailHashing();
         this.dirtyRegions = [];
     }
 
@@ -160,7 +160,7 @@ define([
         },
         drawOnCanvasHashing: function () {
             var bufferCanvas = this.bufferCanvas;
-            var ctx = this.bufferCtx2;
+            var ctx = this.ctx;
             var dirtyRegions = this.dirtyRegions;
             var i = dirtyRegions.length
             while (i--) {
@@ -179,9 +179,9 @@ define([
                 }
             }
             this.dirtyRegions = [];
-            var ctx = this.ctx;
-            ctx.clearRect(0, 0, this.width, this.height);
-            ctx.drawImage(this.bufferCanvas2, 0, 0);
+            //            var ctx = this.ctx;
+            //            ctx.clearRect(0, 0, this.width, this.height);
+            //            ctx.drawImage(this.bufferCanvas2, 0, 0);
         },
         drawOnCanvas: function () {
             var ctx = this.ctx;

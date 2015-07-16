@@ -75,7 +75,7 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     var from = animation.from;
                     var to = animation.to;
                     var easingFunction = Util.EasingFunctions[animation.easing];
-                    var timelapse = (new Date().getTime() - animationObj.startTime) / animation.duration;;
+                    var timelapse = (frameStartTime - animationObj.startTime) / animation.duration;;
                     var animationPorp = Util.ANIMATION_PROP_ARR;
                     var duration = animation.duration;
                     var i = animationPorp.length;
@@ -115,10 +115,9 @@ define(["lib/enums", "class/Animation", "lib/Util", "class/Timeline"],
                     this.current[key] = options[key];
                 }
                 this.__updateFinal(options);
-                this.last.keys = this.current.keys;
                 this.last.box = this.current.box;
                 this.current.box = null;
-                this.current.keys = null;
+                this.current.buckets = null;
                 this.isActive = true;
                 this.layer.sptialHashMapping.updateAndSetNearModelRerender(this);
             }

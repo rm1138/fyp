@@ -58,14 +58,13 @@ require(['lib/main'], function (Framework) {
     ];
 
     var gameTick = function () {
-
         setTimeout(gameTick, 100);
     };
 
     var init = function () {
 
-        for (var i = 0; i < 500; i++) {
-            var scale = Math.random() * 0.05;
+        for (var i = 0; i < 3500; i++) {
+            var scale = Math.random() * 0.01;
             var modelTemp = backgroundLayer.addModel({
                 type: "image",
                 x: Math.random() * container.width,
@@ -79,11 +78,10 @@ require(['lib/main'], function (Framework) {
                 scaleY: scale,
                 QoSLevel: Math.round(Math.random() * 8) + 1
             });
-            console.log(modelTemp.QoSLevel);
             background.push(modelTemp);
         }
 
-        for (var i = 0; i < 20; i++) {
+        for (var i = 0; i < 10; i++) {
             var asteroid = layer1.addModel({
                 type: "image",
                 x: Math.random() * container.width,
@@ -112,9 +110,9 @@ require(['lib/main'], function (Framework) {
         var moveBg = function (i) {
             var duration = Math.max(100, Math.random() * 20000);
             var star = background[i];
-            var scale = Math.random() * 0.05;
+            var scale = Math.random() * 0.02;
             star.addAnimation({
-                y: -20,
+                y: -40,
                 x: Math.random() * container.width,
                 scaleX: scale,
                 scaleY: scale,
@@ -134,7 +132,7 @@ require(['lib/main'], function (Framework) {
         var moveAsteroid = function (i) {
             var duration = Math.max(3000, Math.random() * 10000);
             var asteroid = asteroids[i];
-            var scale = Math.max(1, Math.random() * 0.8 + 0.5);
+            var scale = Math.max(0.8, Math.random() * 0.8 + 0.5);
             asteroid.addAnimation({
                 y: -100,
                 x: Math.random() * container.width,
@@ -150,10 +148,8 @@ require(['lib/main'], function (Framework) {
             }, true);
             setTimeout(moveAsteroid, duration + 100, i);
         };
-        for (var i = 0; i < background.length; i++) {
-            if (Math.random() > 0.5) {
-                moveBg(i);
-            }
+        for (var i = 0; i < 350; i++) {
+            moveBg(i);
         }
 
         for (var i = 0; i < asteroids.length; i++) {
@@ -166,6 +162,13 @@ require(['lib/main'], function (Framework) {
     var body = document.getElementsByTagName("body")[0];
     var lastKeytime = 0;
     var lastKey = 0;
+    container.addEventListener("mousemove", function (e) {
+        spaceship.set({
+            x: e.clientX,
+            y: e.clientY
+        });
+    });
+
     body.addEventListener("keydown", function (e) {
         var now = new Date().getTime();
         var moveDelta = 100; //Math.min(100, (1 / (now - lastKeytime)) * 1000);
